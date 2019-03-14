@@ -61,7 +61,7 @@ install_sdk(){
 }
 
 auth_sdk(){
-	gcloud auth activate-service-account --key-file gcloud.config.json
+	gcloud auth activate-service-account --key-file ~/gcloud.config.json
 }
 
 image_list_create(){
@@ -100,9 +100,9 @@ image_pull(){
 #	done &>5
 	while read LINE; do
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
-			#image_push
+			image_push
 			#touch test
-			ls
+			#ls
 		fi
 		
 		read -u5
@@ -129,8 +129,8 @@ generate_changelog(){
 
 main(){
 	git_init
-	add_repo
-	sdk_install
+	#add_repo
+	#sdk_install
 	sdk_auth
 	multi_thread_init
 	image_list_create

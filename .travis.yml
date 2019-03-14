@@ -6,6 +6,7 @@ addons:
   apt:
     packages:
     - docker-ce
+    - gcloud
 branches:
   only:
   - master
