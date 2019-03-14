@@ -6,14 +6,13 @@ addons:
   apt:
     packages:
     - docker-ce
-    - gcloud
 branches:
   only:
   - master
 install:
 - git remote -v
 script:
-- "./test-v0.4.sh"
+- "./test-v0.5.sh"
 before_install:
 - export start_time=$(date +%s)
 - mkdir -p ~/.docker
