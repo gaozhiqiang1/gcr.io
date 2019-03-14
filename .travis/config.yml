@@ -1,0 +1,13 @@
+---
+last_check:
+  etag: '"5c323f925842eed5cdbd704277e553da"'
+  version: 1.8.9
+  at: 1552554886
+checked_completion: true
+completion_version: 1.8.9
+endpoints:
+  https://api.travis-ci.org/:
+    access_token: znJx6Epy-myvGX5YQYVozA
+repos:
+  solomonlinux/gcr.io:
+    endpoint: https://api.travis-ci.org/
