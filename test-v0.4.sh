@@ -100,7 +100,9 @@ image_pull(){
 #	done &>5
 	while read LINE; do
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
-			image_push
+			#image_push
+			touch test
+			ls
 		fi
 		
 		read -u5
