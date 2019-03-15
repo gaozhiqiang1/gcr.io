@@ -129,6 +129,7 @@ image_list_create(){
 				if [ $? -ne 0 ]; then
 					#docker pull ${IMAGE}:latest
 					echo ${IMAGE}:latest >> $IMAGE_LIST
+
 				fi
 			fi
 			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
@@ -138,6 +139,7 @@ image_list_create(){
 				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
 			fi
 			#echo ${IMAGE}:${TAG} >> list.txt &
+			文件行数: $(wc -l $IMAGE_LIST)
 		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
 	done < <(gcloud container images list --repository=$NAMESPACE --format="value(NAME)")
