@@ -173,16 +173,17 @@ image_list_create(){
 image_pull(){
 	echo "拉取镜像"
 	echo
-	#for ((i;i<=$THREAD;i++)); do
-	#	echo
-	#done >&5
+	for ((i;i<=$THREAD;i++)); do
+		echo
+	done >&5
 	while read LINE; do
 		
-	#	read -u5
-	#	{
+		read -u5
+		{
 			docker pull $LINE
-	#		exec &>5
-	#	}&
+			exec >&5
+		}&
+		wait
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi
@@ -213,7 +214,7 @@ generate_changelog(){
 }
 
 main(){
-#	git_init
+	git_init
 	sdk_install
 	sdk_auth
 	multi_thread_init
