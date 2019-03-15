@@ -13,7 +13,7 @@ GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
 INTERVAL=.
 
 # 启动多少个线程同步
-THREAD=5
+THREAD=2
 # 磁盘容量超过多少时清理镜像
 DISK=70
 
@@ -183,11 +183,11 @@ image_pull(){
 			docker pull $LINE
 			exec >&5
 		}&
+		wait
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi
 	done < $IMAGE_LIST
-	wait
 	rm -rf $IMAGE_LIST
 	#wait
 	#exec 5>&-
