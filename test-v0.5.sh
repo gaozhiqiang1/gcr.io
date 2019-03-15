@@ -110,7 +110,7 @@ image_list_create(){
 
 	# 创建名称空间对应的目录
 	for NS in $GCRIO_NS; do
-	NAMESPACE=gcr.io/${GCRIO_NS}
+	NAMESPACE=gcr.io/${NS}
 	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 
 	# 创建镜像所对应的目录
