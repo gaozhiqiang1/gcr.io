@@ -33,7 +33,11 @@ multi_thread_init(){
 	# 系统调用exec是以新的进程去替代原来的进程,但进程的PID保持不变,换句话说就是在调用进程内部执行一个可执行文件
 	exec 5<>${TMPFIFO}
 	rm -rf $TMPFIFO
-#	req $THREAD >&5
+	# travis-ci没有安装req命令,我们不安装了直接使用语句结构
+	#req $THREAD >&5
+	for ((i;i<=$THREAD;i++)); do
+		echo >&5
+	done
 }
 
 git_init(){
@@ -172,10 +176,6 @@ image_list_create(){
 
 image_pull(){
 	echo "拉取镜像"
-	echo
-	for ((i;i<=$THREAD;i++)); do
-		echo
-	done >&5
 	while read LINE; do
 		
 		read -u5
@@ -183,11 +183,11 @@ image_pull(){
 			docker pull $LINE
 			exec >&5
 		}&
-		wait
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi
 	done < $IMAGE_LIST
+	wait
 	rm -rf $IMAGE_LIST
 	#wait
 	#exec 5>&-
@@ -196,6 +196,8 @@ image_pull(){
 image_push(){
 	echo "推送镜像"
 	while read REPO TAG;do
+		read -u5
+		{
 		SRC=${REPO}:${TAG}
 		DEST=${DOCKERHUB_REPO_NAME}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
 		#docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
@@ -206,7 +208,10 @@ image_push(){
 		docker rmi $SRC
 		docker push $DEST && echo "推送镜像${SRC}至${DEST}成功"
 		docker rmi $DEST
+		echo >&5
+		}&
 	done < <(docker images --format {{.Repository}}' '{{.Tag}})
+	wait
 }
 
 generate_changelog(){
