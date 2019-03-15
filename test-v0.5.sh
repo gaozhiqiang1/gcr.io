@@ -139,7 +139,7 @@ image_list_create(){
 				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
 			fi
 			#echo ${IMAGE}:${TAG} >> list.txt &
-			文件行数: $(wc -l $IMAGE_LIST)
+			echo "文件行数: $(wc -l $IMAGE_LIST)"
 		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
 	done < <(gcloud container images list --repository=$NAMESPACE --format="value(NAME)")
