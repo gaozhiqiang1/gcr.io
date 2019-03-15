@@ -125,22 +125,22 @@ image_list_create(){
 image_pull(){
 	echo "拉取镜像"
 	echo
-	for ((i;i<=$THREAD;i++)); do
-		echo
-	done >&5
+	#for ((i;i<=$THREAD;i++)); do
+	#	echo
+	#done >&5
 	while read LINE; do
+		
+	#	read -u5
+	#	{
+			docker pull $LINE
+	#		exec &>5
+	#	}&
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi
-		
-		read -u5
-		{
-			docker pull $LINE
-			exec &>5
-		}&
 	done < $IMAGE_LIST
-	wait
-	exec 5>&-
+	#wait
+	#exec 5>&-
 }
 
 image_push(){
@@ -149,7 +149,7 @@ image_push(){
 		docker tag ${REPO}:${TAG} ${MY_REPO##*/}:${TAG}
 		docker tag ${REPO}:${TAG} ${MY_REPO}/${REPO##*/}:${TAG}
 		docker rmi ${REPO}:${TAG}
-		docker push ${REPO}:${TAG}
+		docker push ${REPO}:${TAG} && echo "推送镜像${REPO}:${TAG}成功"
 		docker rmi ${MY_REPO}/${REPO##*/}:${TAG}
 	done < <(docker images --format {{.Repository}}' '{{.Tag}})
 }
