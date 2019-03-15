@@ -146,11 +146,11 @@ image_pull(){
 image_push(){
 	echo "推送镜像"
 	while read REPO TAG;do
-		docker tag ${REPO}:${TAG} ${MY_REPO##*/}:${TAG}
-		docker tag ${REPO}:${TAG} ${MY_REPO}/${REPO##*/}:${TAG}
+		docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
+		#docker tag ${REPO}:${TAG} ${MY_REPO}/${REPO##*/}:${TAG}
 		docker rmi ${REPO}:${TAG}
-		docker push ${MY_REPO}/${REPO##*/}:${TAG} && echo "推送镜像${REPO}:${TAG}成功"
-		docker rmi ${MY_REPO}/${REPO##*/}:${TAG}
+		docker push ${MY_REPO}/gcrio-${REPO##*/}:${TAG} && echo "推送镜像${MY_REPO}/gcrio-${REPO##*/}:${TAG}成功"
+		docker rmi ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
 	done < <(docker images --format {{.Repository}}' '{{.Tag}})
 }
 
