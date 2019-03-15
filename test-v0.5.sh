@@ -109,9 +109,10 @@ image_list_create(){
 	IMAGE_LIST=$(mktemp imagelist.XXX)
 
 	# 创建名称空间对应的目录
-	for NS in $GCRIO_NS; do
+	#for NS in $GCRIO_NS; do
+	NS=$1
 	NAMESPACE=gcr.io/${NS}
-	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
+	#[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -143,7 +144,7 @@ image_list_create(){
 		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
 	done < <(gcloud container images list --repository=$NAMESPACE --format="value(NAME)")
-	done
+	#done
 }
 
 image_pull(){
@@ -163,6 +164,7 @@ image_pull(){
 			image_push
 		fi
 	done < $IMAGE_LIST
+	rm -rf $IMAGE_LIST
 	#wait
 	#exec 5>&-
 }
@@ -171,7 +173,7 @@ image_push(){
 	echo "推送镜像"
 	while read REPO TAG;do
 		SRC=${REPO}:${TAG}
-		DEST=${MY_REPO}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
+		DEST=${DOCKERHUB_REPO_NAME}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
 		#docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
 		#docker rmi ${REPO}:${TAG}
 		#docker push ${MY_REPO}/gcrio-${REPO##*/}:${TAG} && echo "推送镜像${MY_REPO}/gcrio-${REPO##*/}:${TAG}成功"
@@ -192,8 +194,10 @@ main(){
 	sdk_install
 	sdk_auth
 	multi_thread_init
-	image_list_create
-	image_pull
+	for I in $GCRIO_NS; do
+		image_list_create $I
+		image_pull
+	done
 	generate_changelog
 	git_commit
 }
