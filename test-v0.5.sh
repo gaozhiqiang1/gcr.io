@@ -86,6 +86,7 @@ sdk_install(){
 }
 
 sdk_auth(){
+		gcloud container images list
 	local AUTH_COUNT=$(gcloud auth list --format="get(ACCOUNT)" | wc -l)
 	if [ $AUTH_COUNT -eq 0 ]; then
 		#gcloud auth activate-service-account --key-file ~/gcloud.config.json
