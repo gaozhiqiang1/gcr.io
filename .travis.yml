@@ -6,13 +6,14 @@ addons:
   apt:
     packages:
     - docker-ce
+    - bash
 branches:
   only:
   - master
 install:
 - git remote -v
 script:
-- "sh ./test-v0.5.sh"
+- "bash ./test-v0.5.sh"
 before_install:
 - export start_time=$(date +%s)
 - mkdir -p ~/.docker
