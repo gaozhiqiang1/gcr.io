@@ -80,6 +80,8 @@ sdk_install(){
 		fi
 	else
 		echo "识别不了"
+		add_apt_source
+		sudo apt-get -y install google-cloud-sdk && echo "安装"
 	fi
 }
 
