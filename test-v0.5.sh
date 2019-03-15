@@ -1,12 +1,21 @@
 #!/bin/bash
 
 GCR_REPO=gcr.io/google_containers
-MY_REPO=solomonlinux
-REPO_NAME=gcr.io
-GIT_REPO=git@github.com:solomonlinux/gcr.io.git
+
+
+
+GCRIO_NS="google-appengine cloudsql-docker cloud-marketplace kubeflow-images-public spinnaker-marketplace istio-release kubernetes-e2e-test-images cloud-builders knative-releases cloud-datalab linkerd-io distroless google_containers kubernetes-helm runconduit google-samples k8s-minikube heptio-images tf-on-k8s-dogfood"
+QUAYIO_NS="coreos wire calico prometheus outline weaveworks hellofresh kubernetes-ingress-controller replicated kubernetes-service-catalog 3scale"
+
+DOCKERHUB_REPO_NAME=solomonlinux
+GITHUB_REPO_NAME=gcr.io
+GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
+
+INTERVAL=.
+
 THREAD=5
 DISK=70
-IMAGE_LIST=`mktemp imagelist.XXX`
+#IMAGE_LIST=`mktemp imagelist.XXX`
 
 set -e
 
@@ -27,12 +36,12 @@ git_init(){
 	# 这两个命令仅仅用于标识提交代码的开发者信息,可以随便设置;仅用于质量追踪到具体某一个人
 	git config --global user.name "gaozhiqiang"
 	git config --global user.email "1211348968@qq.com"
-	git clone $GIT_REPO
-	cd $REPO_NAME
+	git clone $GIT_REPO_ADDR
+	cd $GIT_REPO_NAME
 }
 
 git_commit(){
-	echo
+	rm -rf $IMAGE_LIST
 	local LINES=$(git status -s | wc -l)
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
@@ -94,13 +103,25 @@ sdk_auth(){
 	fi
 }
 
+# gcr.io/<namespace>/<image>:<tag> --> gcr.io/<namespace>/<image>/<tag>
 image_list_create(){
+	# 创建用于保存镜像列表的文件
+	IMAGE_LIST=$(mktemp imagelist.XXX)
+
+	# 创建名称空间对应的目录
+	for NS in $GCRIO_NS; do
+	NAMESPACE=gcr.io/${GCRIO_NS}
+	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
+
+	# 创建镜像所对应的目录
 	while read IMAGE; do
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
-		[ -d $IMAGE ] || mkdir -p $IMAGE
+		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
 		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
 
+		# 创建标签所对应的文件
 		while read TAG; do
+			# 处理latest镜像
 			if [[ $TAG == "latest" ]] && [[ -f ${IMAGE}/latest.old ]]; then
 				DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
 				echo $DIGEST > $IMAGE/latest
@@ -119,7 +140,8 @@ image_list_create(){
 			#echo ${IMAGE}:${TAG} >> list.txt &
 		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	done < <(gcloud container images list --repository=gcr.io/google_containers --format="value(NAME)")
+	done < <(gcloud container images list --repository=$NAMESPACE --format="value(NAME)")
+	done
 }
 
 image_pull(){
@@ -146,11 +168,16 @@ image_pull(){
 image_push(){
 	echo "推送镜像"
 	while read REPO TAG;do
-		docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
-		#docker tag ${REPO}:${TAG} ${MY_REPO}/${REPO##*/}:${TAG}
-		docker rmi ${REPO}:${TAG}
-		docker push ${MY_REPO}/gcrio-${REPO##*/}:${TAG} && echo "推送镜像${MY_REPO}/gcrio-${REPO##*/}:${TAG}成功"
-		docker rmi ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
+		SRC=${REPO}:${TAG}
+		DEST=${MY_REPO}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
+		#docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
+		#docker rmi ${REPO}:${TAG}
+		#docker push ${MY_REPO}/gcrio-${REPO##*/}:${TAG} && echo "推送镜像${MY_REPO}/gcrio-${REPO##*/}:${TAG}成功"
+		#docker rmi ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
+		docker tag $SCR $DEST
+		docker rmi $SCR
+		docker push $DEST && echo "推送镜像${SRC}至${DEST}成功"
+		docker rmi $DEST
 	done < <(docker images --format {{.Repository}}' '{{.Tag}})
 }
 
