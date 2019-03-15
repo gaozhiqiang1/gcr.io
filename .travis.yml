@@ -14,7 +14,6 @@ install:
 script:
 - "./test-v0.5.sh"
 before_install:
-- chmod +x ./test-v0.5.sh
 - export start_time=$(date +%s)
 - mkdir -p ~/.docker
 - mkdir -p ~/.ssh
@@ -26,3 +25,4 @@ before_install:
 - chmod 600 ~/.docker/config.json
 - eval $(ssh-agent)
 - ssh-add ~/.ssh/id_rsa
+- chmod +x ./test-v0.5.sh
