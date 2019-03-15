@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 GCR_REPO=gcr.io/google_containers
 MY_REPO=solomonlinux
