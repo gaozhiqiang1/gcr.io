@@ -1,23 +1,27 @@
 #!/bin/bash
 
-GCR_REPO=gcr.io/google_containers
-
-
-
+# gcr.io与quay.io的名称空间
 GCRIO_NS="google-appengine cloudsql-docker cloud-marketplace kubeflow-images-public spinnaker-marketplace istio-release kubernetes-e2e-test-images cloud-builders knative-releases cloud-datalab linkerd-io distroless google_containers kubernetes-helm runconduit google-samples k8s-minikube heptio-images tf-on-k8s-dogfood"
 QUAYIO_NS="coreos wire calico prometheus outline weaveworks hellofresh kubernetes-ingress-controller replicated kubernetes-service-catalog 3scale"
 
+# 我的dockerhub与github仓库
 DOCKERHUB_REPO_NAME=solomonlinux
 GITHUB_REPO_NAME=gcr.io
 GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
 
+# 同步镜像之前打标使用的间隔符
 INTERVAL=.
 
+# 启动多少个线程同步
 THREAD=5
+# 磁盘容量超过多少时清理镜像
 DISK=70
-#IMAGE_LIST=`mktemp imagelist.XXX`
 
+# 出错立即终止
 set -e
+
+# note1: travis-ci构建项目的最大时长是50min,超时之后项目构建终止
+# note2: travis-ci如果长时间没有输出,那么10min之后会终止项目
 
 multi_thread_init(){
 	trap 'exec 5>&-;exec 5<&-;exit 0' 2
@@ -36,23 +40,28 @@ git_init(){
 	# 这两个命令仅仅用于标识提交代码的开发者信息,可以随便设置;仅用于质量追踪到具体某一个人
 	git config --global user.name "gaozhiqiang"
 	git config --global user.email "1211348968@qq.com"
+	# 修正源
 	git remote remove origin
 	git remote add origin $GITHUB_REPO_ADDR
-	git branch -a
-	git pull
-	
+	if git branch -a | grep 'origin/develop' &> /dev/null; then
+		git checkout develop
+		git pull origin develop
+	else
+		git checkout -b develop
+		git pull --no-commit origin develop
+	fi
 	#git clone $GITHUB_REPO_ADDR
 	#cd $GITHUB_REPO_NAME
 }
 
 git_commit(){
-	rm -rf $IMAGE_LIST
+	#rm -rf $IMAGE_LIST
 	local LINES=$(git status -s | wc -l)
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
 		git add -A
 		git commit 'Synchronizing completion at $TODAY'
-		git push
+		git push -u origin develop
 	fi
 }
 
