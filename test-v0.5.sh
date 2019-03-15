@@ -206,7 +206,7 @@ generate_changelog(){
 }
 
 main(){
-	git_init
+#	git_init
 	sdk_install
 	sdk_auth
 	multi_thread_init
