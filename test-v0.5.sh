@@ -179,8 +179,8 @@ image_push(){
 		#docker rmi ${REPO}:${TAG}
 		#docker push ${MY_REPO}/gcrio-${REPO##*/}:${TAG} && echo "推送镜像${MY_REPO}/gcrio-${REPO##*/}:${TAG}成功"
 		#docker rmi ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
-		docker tag $SCR $DEST
-		docker rmi $SCR
+		docker tag $SRC $DEST
+		docker rmi $SRC
 		docker push $DEST && echo "推送镜像${SRC}至${DEST}成功"
 		docker rmi $DEST
 	done < <(docker images --format {{.Repository}}' '{{.Tag}})
