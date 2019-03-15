@@ -38,6 +38,7 @@ git_init(){
 	git config --global user.email "1211348968@qq.com"
 	git remote remove origin
 	git remote add origin $GITHUB_REPO_ADDR
+	git branch -a
 	git pull
 	
 	#git clone $GITHUB_REPO_ADDR
