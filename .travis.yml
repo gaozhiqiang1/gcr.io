@@ -12,7 +12,7 @@ branches:
 install:
 - git remote -v
 script:
-- "bash ./test-v0.5.sh"
+- "sh ./test-v0.5.sh"
 before_install:
 - export start_time=$(date +%s)
 - mkdir -p ~/.docker
