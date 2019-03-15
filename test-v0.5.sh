@@ -36,9 +36,10 @@ git_init(){
 	# 这两个命令仅仅用于标识提交代码的开发者信息,可以随便设置;仅用于质量追踪到具体某一个人
 	git config --global user.name "gaozhiqiang"
 	git config --global user.email "1211348968@qq.com"
-	git remote remote origin
+	git remote remove origin
 	git remote add origin $GITHUB_REPO_ADDR
 	git pull
+	
 	#git clone $GITHUB_REPO_ADDR
 	#cd $GITHUB_REPO_NAME
 }
