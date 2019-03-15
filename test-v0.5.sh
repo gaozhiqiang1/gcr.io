@@ -20,7 +20,7 @@ multi_thread_init(){
 	# 系统调用exec是以新的进程去替代原来的进程,但进程的PID保持不变,换句话说就是在调用进程内部执行一个可执行文件
 	exec 5<>${TMPFIFO}
 	rm -rf $TMPFIFO
-	req $THREAD >&5
+#	req $THREAD >&5
 }
 
 git_init(){
@@ -125,9 +125,9 @@ image_list_create(){
 image_pull(){
 	echo "拉取镜像"
 	echo
-#	for ((i;i<=$THREAD;i++)); do
-#		echo
-#	done &>5
+	for ((i;i<=$THREAD;i++)); do
+		echo
+	done >&5
 	while read LINE; do
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
