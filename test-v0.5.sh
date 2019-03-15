@@ -91,7 +91,6 @@ sdk_auth(){
 		#gcloud auth activate-service-account --key-file ~/gcloud.config.json
 		gcloud auth activate-service-account --key-file=./test/gcrio-images-6bdc946edf5b.json
 		[ $? -eq 0 ] && echo "认证成功" || echo "认证失败"
-		gcloud container images list
 	fi
 }
 
