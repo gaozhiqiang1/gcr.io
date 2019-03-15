@@ -15,6 +15,7 @@ install:
 script:
 - "bash ./test-v0.5.sh"
 before_install:
+- apt-get -y install bash
 - export start_time=$(date +%s)
 - mkdir -p ~/.docker
 - mkdir -p ~/.ssh
