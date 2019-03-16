@@ -203,8 +203,8 @@ image_pull(){
 image_push(){
 	echo "推送镜像"
 	while read REPO TAG;do
-#		read -u5
-#		{
+		read -u5
+		{
 		echo "************************************************************************************"
 		SRC=${REPO}:${TAG}
 		DEST=${DOCKERHUB_REPO_NAME}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
@@ -212,10 +212,10 @@ image_push(){
 		docker rmi $SRC
 		docker push $DEST && echo "推送镜像${SRC}至${DEST}成功"
 		docker rmi $DEST
-#		echo >&5
-#		}&
+		echo >&5
+		}&
 	done < <(docker images --format {{.Repository}}' '{{.Tag}})
-#	wait
+	wait
 }
 
 generate_changelog(){
