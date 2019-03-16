@@ -171,7 +171,7 @@ image_list_create(){
 				fi
 			fi
 			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
-			if [ ! -f ${IMAGE}:${TAG} ]; then
+			if [ ! -f ${IMAGE}/${TAG} ]; then
 				echo ${IMAGE}:${TAG} > ${IMAGE}/${TAG}
 				#docker pull ${IMAGE}:${TAG}
 				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
