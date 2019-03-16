@@ -13,7 +13,7 @@ GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
 INTERVAL=.
 
 # 启动多少个线程同步
-THREAD=2
+THREAD=3
 # 磁盘容量超过多少时清理镜像
 DISK=70
 
@@ -33,11 +33,11 @@ multi_thread_init(){
 	# 系统调用exec是以新的进程去替代原来的进程,但进程的PID保持不变,换句话说就是在调用进程内部执行一个可执行文件
 	exec 5<>${TMPFIFO}
 	rm -rf $TMPFIFO
-	# travis-ci没有安装req命令,我们不安装了直接使用语句结构
-	#req $THREAD >&5
-	for ((i;i<=$THREAD;i++)); do
-		echo >&5
-	done
+	
+	seq $THREAD >&5
+	#for ((i;i<=$THREAD;i++)); do
+	#	echo >&5
+	#done
 	echo "初始化消息队列完成"
 }
 
@@ -183,7 +183,8 @@ image_pull(){
 		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
 		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
 		# 还有就是拉取完镜像才能被清理镜像所识别,不会造成边拉去边清理这种冲突
-		for ((i;i<=$THREAD;i++)); do
+		#for ((i=1;i<=$THREAD;i++)); do
+		for I in $(seq $THREAD); do
 			read -u5
 			{
 				docker pull $LINE &> /dev/null
