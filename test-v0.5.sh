@@ -182,6 +182,7 @@ image_pull(){
 		{
 			docker pull $LINE
 			exec >&5
+			echo "#########################################################################"
 		}&
 		wait
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
@@ -198,6 +199,7 @@ image_push(){
 	while read REPO TAG;do
 #		read -u5
 #		{
+		echo "************************************************************************************"
 		SRC=${REPO}:${TAG}
 		DEST=${DOCKERHUB_REPO_NAME}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
 		#docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
