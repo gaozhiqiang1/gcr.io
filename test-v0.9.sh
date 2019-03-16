@@ -244,7 +244,7 @@ dockerhub_tag_exist(){
 tag_file_check(){
 	DOMAIN=$1
 	while read PATH FILE; do
-		IMAGE_NAME=${PATH##*/}
+		IMAGE_NAME=${PATH##* /}
 		TAGE_NAME=$FILE
 		RETURN_VALUE=$(dockerhub_tag_exist $IMAGE_NAME $TAGE_NAME)
 		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
@@ -254,7 +254,7 @@ tag_file_check(){
 			# break
 		#fi
 		if [ $RETURN_VALUE == 'null' ]; then
-			rm -rf ${PATH}/${FILE}
+			rm -rf $TAG_NAME
 		fi
 	done < <( find $DOMAIN/ -type f | sed 's#/# #3' )
 }
