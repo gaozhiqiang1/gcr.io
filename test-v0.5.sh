@@ -38,6 +38,7 @@ multi_thread_init(){
 	for ((i;i<=$THREAD;i++)); do
 		echo >&5
 	done
+	echo "初始化消息队列完成"
 }
 
 git_init(){
@@ -56,6 +57,7 @@ git_init(){
 	fi
 	#git clone $GITHUB_REPO_ADDR
 	#cd $GITHUB_REPO_NAME
+	echo "初始化仓库完成"
 }
 
 git_commit(){
@@ -67,6 +69,7 @@ git_commit(){
 		git commit 'Synchronizing completion at $TODAY'
 		git push -u origin develop
 	fi
+	echo "提交仓库完成"
 }
 
 add_yum_repo(){
@@ -95,37 +98,36 @@ sdk_install(){
 		if [ ! -f /etc/yum.repos.d/google-cloud-sdk.repo ]; then
 			add_yum_repo
 			sudo yum -y install google-cloud-sdk
+			echo "添加软件源完成"
 		else
 			which gcloud &> /dev/null || sudo yum -y install google-cloud-sdk
+			echo "添加软件源完成"
 		fi
 	elif [ OS_VERSION == 'UBUNTU' ]; then
 		if [ ! -f /etc/apt/sources.list.d/google-cloud-sdk.list ]; then
 			add_apt_source
 			sudo apt-get -y update && sudo apt-get -y install google-cloud-sdk
+			echo "添加软件源完成"
 		else
 			which gcloud &> /dev/null || sudo apt-get -y install google-cloud-sdk
+			echo "添加软件源完成"
 		fi
 	else
-		echo "识别不了"
+		# 其实工作在这一层
 		add_apt_source
 		sudo apt-get -y install google-cloud-sdk && echo "安装"
+		echo "添加软件源完成"
 	fi
 }
 
 sdk_auth(){
-	echo "高志强"
-	ls -l ~/
-	cat ~/gcrio-images-6bdc946edf5b.json
-	pwd
-	ls -l
-	echo
-	echo "高志强"
+	# 家目录为/home/travis;当前所在目录为/home/travis/bulid/solomonlinux/gcr.io;同时识别不了~/为家目录
 	local AUTH_COUNT=$(gcloud auth list --format="get(ACCOUNT)" | wc -l)
 	if [ $AUTH_COUNT -eq 0 ]; then
 		#gcloud auth activate-service-account --key-file ~/gcloud.config.json
 		#gcloud auth activate-service-account --key-file=./test/gcrio-images-6bdc946edf5b.json
 		gcloud auth activate-service-account --key-file=/home/travis/gcrio-images-6bdc946edf5b.json
-		[ $? -eq 0 ] && echo "认证成功" || echo "认证失败"
+		[ $? -eq 0 ] && echo "grc.io仓库认证成功" || echo "gcr.io仓库认证失败"
 	fi
 }
 
@@ -178,20 +180,20 @@ image_pull(){
 	echo "拉取镜像"
 	while read LINE; do
 		
+		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
+		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
+		# 还有就是拉取完镜像才能被清理镜像所识别,不会造成边拉去边清理这种冲突
 		read -u5
 		{
-			docker pull $LINE
+			docker pull $LINE &> /dev/null
 			exec >&5
-			echo "#########################################################################"
+			if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
+				image_push
+			fi
 		}&
-		wait
-		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
-			image_push
-		fi
 	done < $IMAGE_LIST
+	wait
 	rm -rf $IMAGE_LIST
-	#wait
-	#exec 5>&-
 }
 
 image_push(){
@@ -202,10 +204,6 @@ image_push(){
 		echo "************************************************************************************"
 		SRC=${REPO}:${TAG}
 		DEST=${DOCKERHUB_REPO_NAME}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
-		#docker tag ${REPO}:${TAG} ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
-		#docker rmi ${REPO}:${TAG}
-		#docker push ${MY_REPO}/gcrio-${REPO##*/}:${TAG} && echo "推送镜像${MY_REPO}/gcrio-${REPO##*/}:${TAG}成功"
-		#docker rmi ${MY_REPO}/gcrio-${REPO##*/}:${TAG}
 		docker tag $SRC $DEST
 		docker rmi $SRC
 		docker push $DEST && echo "推送镜像${SRC}至${DEST}成功"
@@ -229,6 +227,7 @@ main(){
 		image_list_create $I
 		image_pull
 	done
+	exec 5>&-
 	generate_changelog
 	git_commit
 }
