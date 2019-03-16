@@ -149,7 +149,7 @@ image_list_create(){
 	REPOSITORY=gcr.io/${NS}
 	[ -d $REPOSITORY ] || mkdir -p $REPOSITORY
 
-	#tag_file_check gcr.io
+	tag_file_check gcr.io
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -244,6 +244,9 @@ dockerhub_tag_exist(){
 tag_file_check(){
 	DOMAIN=$1
 	while read PATH FILE; do
+		if [ -n $FILE ]; then
+			break
+		fi
 		#IMAGE_NAME=${PATH##*/}
 		IMAGE_NAME=$(echo $PATH | tr / $INTERVAL)
 		TAGE_NAME=$FILE
