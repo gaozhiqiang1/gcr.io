@@ -146,15 +146,14 @@ image_list_create(){
 	#for NS in $GCRIO_NS; do
 	NS=$1
 	REPOSITORY=gcr.io/${NS}
-	#[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
+	[ -d $REPOSITORY ] || mkdir -p $REPOSITORY
 
+	tag_file_check gcr.io
+	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
 		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
-
-		#tag_file_check gcr.io
-
 		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
 
 		# 创建标签所对应的文件
@@ -244,7 +243,8 @@ dockerhub_tag_exist(){
 tag_file_check(){
 	DOMAIN=$1
 	while read PATH FILE; do
-		IMAGE_NAME=${PATH##*/}
+		#IMAGE_NAME=${PATH##*/}
+		IMAGE_NAME=$(echo $PATH | tr / $INTERVAL)
 		TAGE_NAME=$FILE
 		RETURN_VALUE=$(dockerhub_tag_exist $IMAGE_NAME $TAGE_NAME)
 		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
