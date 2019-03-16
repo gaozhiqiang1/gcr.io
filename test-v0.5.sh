@@ -187,7 +187,8 @@ image_pull(){
 			read -u5
 			{
 				docker pull $LINE &> /dev/null
-				exec >&5
+				# "echo >&5"错写为"exec >&5"导致放至后台后就没有wait的效果了似的,找到原因了
+				echo >&5
 			}&
 		done
 		wait
