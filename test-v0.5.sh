@@ -38,6 +38,7 @@ multi_thread_init(){
 	#for ((i;i<=$THREAD;i++)); do
 	#	echo >&5
 	#done
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	echo "初始化消息队列完成"
 }
 
@@ -57,7 +58,8 @@ git_init(){
 	fi
 	#git clone $GITHUB_REPO_ADDR
 	#cd $GITHUB_REPO_NAME
-	echo "初始化仓库完成"
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	echo "初始化GITHUB仓库完成"
 }
 
 git_commit(){
@@ -69,7 +71,8 @@ git_commit(){
 		git commit 'Synchronizing completion at $TODAY'
 		git push -u origin develop
 	fi
-	echo "提交仓库完成"
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	echo "提交GITHUB仓库完成"
 }
 
 add_yum_repo(){
@@ -93,34 +96,36 @@ add_apt_source(){
 }
 
 sdk_install(){
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	OS_VERSION=$(awk -F'"' '/^ID=/{print $(NF-1)}' /etc/os-release | tr a-z A-Z)
 	if [ OS_VERSION == 'CENTOS' ]; then
 		if [ ! -f /etc/yum.repos.d/google-cloud-sdk.repo ]; then
 			add_yum_repo
 			sudo yum -y install google-cloud-sdk
-			echo "添加软件源完成"
+			echo "安装软件完成"
 		else
 			which gcloud &> /dev/null || sudo yum -y install google-cloud-sdk
-			echo "添加软件源完成"
+			echo "安装软件完成"
 		fi
 	elif [ OS_VERSION == 'UBUNTU' ]; then
 		if [ ! -f /etc/apt/sources.list.d/google-cloud-sdk.list ]; then
 			add_apt_source
 			sudo apt-get -y update && sudo apt-get -y install google-cloud-sdk
-			echo "添加软件源完成"
+			echo "安装软件完成"
 		else
 			which gcloud &> /dev/null || sudo apt-get -y install google-cloud-sdk
-			echo "添加软件源完成"
+			echo "安装软件完成"
 		fi
 	else
 		# 其实工作在这一层
 		add_apt_source
 		sudo apt-get -y install google-cloud-sdk && echo "安装"
-		echo "添加软件源完成"
+		echo "安装软件完成"
 	fi
 }
 
 sdk_auth(){
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	# 家目录为/home/travis;当前所在目录为/home/travis/bulid/solomonlinux/gcr.io;同时识别不了~/为家目录
 	local AUTH_COUNT=$(gcloud auth list --format="get(ACCOUNT)" | wc -l)
 	if [ $AUTH_COUNT -eq 0 ]; then
@@ -133,13 +138,14 @@ sdk_auth(){
 
 # gcr.io/<namespace>/<image>:<tag> --> gcr.io/<namespace>/<image>/<tag>
 image_list_create(){
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	# 创建用于保存镜像列表的文件
 	IMAGE_LIST=$(mktemp imagelist.XXX)
 
 	# 创建名称空间对应的目录
 	#for NS in $GCRIO_NS; do
 	NS=$1
-	NAMESPACE=gcr.io/${NS}
+	REPOSITORY=gcr.io/${NS}
 	#[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 
 	# 创建镜像所对应的目录
@@ -171,9 +177,9 @@ image_list_create(){
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
 		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	done < <(gcloud container images list --repository=$NAMESPACE --format="value(NAME)")
+	done < <(gcloud container images list --repository=$REPOSITORY --format="value(NAME)")
 	#done
-	echo "$NAMESPACE仓库准备完成"
+	echo "${REPOSITORY}仓库准备完成"
 }
 
 image_pull(){
@@ -187,7 +193,8 @@ image_pull(){
 		for I in $(seq $THREAD); do
 			read -u5
 			{
-				docker pull $LINE &> /dev/null
+				echo "####################################################################################"
+				docker pull $LINE &> /dev/null && echo "拉取镜像${LINE}成功"
 				# "echo >&5"错写为"exec >&5"导致放至后台后就没有wait的效果了似的,找到原因了
 				echo >&5
 			}&
@@ -212,7 +219,7 @@ image_push(){
 		DEST=${DOCKERHUB_REPO_NAME}/$(echo $REPO | tr / ${INTERVAL}):${TAG}
 		docker tag $SRC $DEST &> /dev/null && echo "打标完成"
 		docker rmi $SRC &> /dev/null && echo "删除源镜像"
-		docker push $DEST &> /dev/null && echo "推送镜像${SRC}至${DEST}成功"
+		docker push $DEST &> /dev/null && echo "推送镜像${DEST}成功"
 		docker rmi $DEST &> /dev/null && echo "删除目标镜像"
 		echo >&5
 		}&
