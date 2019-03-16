@@ -257,7 +257,7 @@ tag_file_check(){
 			#continue
 			# break
 		#fi
-		if [[ $RETURN_VALUE == 'null' ]]; then
+		if [[ $RETURN_VALUE == null ]]; then
 			rm -rf ${PATH}/${FILE}
 		fi
 	done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
