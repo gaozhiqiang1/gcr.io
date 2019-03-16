@@ -152,6 +152,9 @@ image_list_create(){
 	while read IMAGE; do
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
 		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
+
+		tag_file_check gcr.io
+
 		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
 
 		# 创建标签所对应的文件
@@ -185,7 +188,10 @@ image_list_create(){
 image_pull(){
 	echo "拉取镜像"
 	while read LINE; do
-		
+		# 如果同步时长超过40min就自动提交
+		if sync_commit_check; then
+			git_commit
+		fi
 		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
 		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
 		# 还有就是拉取完镜像才能被清理镜像所识别,不会造成边拉去边清理这种冲突
@@ -231,6 +237,24 @@ image_push(){
 # $1: image_name; $2: image_tag_name
 dockerhub_tag_exist(){
 	curl -s https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO_NAME}/$1/tags/$2/ | jq -r .name
+}
+
+# 凡是我们本地有标签但是dockerhub并不存在的镜像标签文件要删除
+# $1为gcr.io或者quay.io域
+tag_file_check(){
+	DOMAIN=$1
+	while read PATH FILE; do
+		IMAGE_NAME=${PATH##* /}
+		TAGE_NAME=$FILE
+		RETURN_VALUE=$(dockerhub_tag_exist $IMAGE_NAME $TAGE_NAME)
+		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
+		if [ -n $FILE ]; then
+			continue
+		fi
+		if [ $RETURN_VALUE == 'null' ]; then
+			rm -rf $TAG_NAME
+		fi
+	done < <( find $DOMAIN/ -type f | sed 's#/# #3' )
 }
 
 sync_commit_check(){
