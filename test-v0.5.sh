@@ -242,14 +242,16 @@ dockerhub_tag_exist(){
 # 凡是我们本地有标签但是dockerhub并不存在的镜像标签文件要删除
 # $1为gcr.io或者quay.io域
 tag_file_check(){
-	DOMAIN=$1
+	local DOMAIN=$1
 	while read PATH FILE; do
 		if [[ -n $FILE ]]; then
+			echo '上'
 			break
+			echo '下'
 		fi
 		#IMAGE_NAME=${PATH##*/}
-		IMAGE_NAME=$(echo $PATH | tr "/" ${INTERVAL})
-		TAGE_NAME=$FILE
+		local IMAGE_NAME=$(echo $PATH | tr "/" ${INTERVAL})
+		local TAGE_NAME=$FILE
 		RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
 		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
 		# 这个我们不需考虑,因为我们操作的就是文件
@@ -258,7 +260,9 @@ tag_file_check(){
 			# break
 		#fi
 		if [[ $RETURN_VALUE == null ]]; then
+			echo '好'
 			rm -rf ${PATH}/${FILE}
+			echo '坏'
 		fi
 	done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
 }
