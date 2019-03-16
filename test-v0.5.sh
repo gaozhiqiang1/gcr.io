@@ -148,8 +148,36 @@ image_list_create(){
 	NS=$1
 	REPOSITORY=gcr.io/${NS}
 	[ -d $REPOSITORY ] || mkdir -p $REPOSITORY
+###########################################################################################################################################################
 
-	tag_file_check gcr.io
+	local DOMAIN=gcr.io
+	while read PATH FILE; do
+		if [[ -n $FILE ]]; then
+			echo '上'
+			break
+			echo '下'
+		fi
+		#IMAGE_NAME=${PATH##*/}
+		local IMAGE_NAME=$(echo $PATH | tr "/" ${INTERVAL})
+		local TAGE_NAME=$FILE
+		RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
+		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
+		# 这个我们不需考虑,因为我们操作的就是文件
+		#if [ -n $FILE ]; then
+			#continue
+			# break
+		#fi
+		if [[ $RETURN_VALUE == null ]]; then
+			echo '好'
+			rm -rf ${PATH}/${FILE}
+			echo '坏'
+		fi
+	done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+
+
+
+##########################################################################################################################################################
+#	tag_file_check gcr.io
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
