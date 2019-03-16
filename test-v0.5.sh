@@ -183,16 +183,20 @@ image_pull(){
 		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
 		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
 		# 还有就是拉取完镜像才能被清理镜像所识别,不会造成边拉去边清理这种冲突
-		read -u5
-		{
-			docker pull $LINE &> /dev/null
-			exec >&5
-			if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
-				image_push
-			fi
-		}&
+		for ((i;i<=$THREAD;i++)); do
+			read -u5
+			{
+				docker pull $LINE &> /dev/null
+				exec >&5
+			}&
+		done
+		wait
+		
+		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
+			image_push
+		fi	
 	done < $IMAGE_LIST
-	wait
+
 	rm -rf $IMAGE_LIST
 }
 
