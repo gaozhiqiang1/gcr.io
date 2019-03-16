@@ -13,7 +13,7 @@ branches:
 install:
 - git remote -v
 script:
-- "bash -x ./test-v0.5.sh"
+- "bash ./test-v0.5.sh"
 before_install:
 - export START_TIME=$(date +%s)
 - sudo apt-get -y install bash
