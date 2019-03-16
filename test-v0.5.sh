@@ -248,9 +248,11 @@ tag_file_check(){
 		TAGE_NAME=$FILE
 		RETURN_VALUE=$(dockerhub_tag_exist $IMAGE_NAME $TAGE_NAME)
 		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
-		if [ -n $FILE ]; then
-			continue
-		fi
+		# 这个我们不需考虑,因为我们操作的就是文件
+		#if [ -n $FILE ]; then
+			#continue
+			# break
+		#fi
 		if [ $RETURN_VALUE == 'null' ]; then
 			rm -rf $TAG_NAME
 		fi
