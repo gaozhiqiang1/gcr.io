@@ -153,7 +153,7 @@ image_list_create(){
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
 		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
 
-		tag_file_check gcr.io
+		#tag_file_check gcr.io
 
 		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
 
