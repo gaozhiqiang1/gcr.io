@@ -68,7 +68,7 @@ git_commit(){
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
 		git add -A
-		git commit -m 'Synchronizing completion at $TODAY'
+		git commit -m "Synchronizing completion at ${TODAY}"
 		git push -u origin develop
 	fi
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -167,6 +167,7 @@ image_list_create(){
 				if [ $? -ne 0 ]; then
 					#docker pull ${IMAGE}:latest
 					echo ${IMAGE}:latest >> $IMAGE_LIST
+					continue
 
 				fi
 			fi
