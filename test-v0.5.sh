@@ -256,7 +256,7 @@ tag_file_check(){
 		if [ $RETURN_VALUE == 'null' ]; then
 			rm -rf ${PATH}/${FILE}
 		fi
-	done < <( find $DOMAIN/ -type f | sed 's#/# #3' )
+	done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
 }
 
 sync_commit_check(){
