@@ -181,7 +181,7 @@ image_list_create(){
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
 		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	done < <(gcloud container images list --repository=${REPOSITORY} --format="value(NAME)")
+	done < <(gcloud container images list --repository=gcr.io/google-appengine --format="value(NAME)")
 	#done
 	echo "${REPOSITORY}仓库准备完成"
 }
