@@ -149,7 +149,7 @@ image_list_create(){
 	REPOSITORY=gcr.io/${NS}
 	[ -d $REPOSITORY ] || mkdir -p $REPOSITORY
 
-	tag_file_check gcr.io
+	#tag_file_check gcr.io
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -179,9 +179,9 @@ image_list_create(){
 			fi
 			#echo ${IMAGE}:${TAG} >> list.txt &
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
-		done < <(gcloud container images list-tags gcr.io/google-appengine/api-proxy --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
+		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	done < <(gcloud container images list --repository=gcr.io/google-appengine --format="value(NAME)")
+	done < <(gcloud container images list --repository=${REPOSITORY} --format="value(NAME)")
 	#done
 	echo "${REPOSITORY}仓库准备完成"
 }
