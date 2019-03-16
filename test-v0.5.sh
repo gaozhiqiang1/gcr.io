@@ -226,6 +226,21 @@ image_push(){
 	wait
 }
 
+# 检查对应的镜像是否存在
+# curl -s https://hub.docker.com/v2/repositories/solomonlinux/nginx/tags/v1-test/ | jq -r .name
+# $1: image_name; $2: image_tag_name
+dockerhub_tag_exist(){
+	curl -s https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO_NAME}/$1/tags/$2/ | jq -r .name
+}
+
+sync_commit_check(){
+	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 40 ]]; then
+		return true
+	else
+		return false
+	fi
+}
+
 generate_changelog(){
 	echo
 }
