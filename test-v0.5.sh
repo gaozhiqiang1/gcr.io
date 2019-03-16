@@ -119,7 +119,7 @@ sdk_install(){
 	else
 		# 其实工作在这一层
 		add_apt_source
-		sudo apt-get -y install google-cloud-sdk && echo "安装"
+		sudo apt-get -y install google-cloud-sdk &> /dev/null
 		echo "安装软件完成"
 	fi
 }
