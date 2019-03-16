@@ -68,7 +68,7 @@ git_commit(){
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
 		git add -A
-		git commit 'Synchronizing completion at $TODAY'
+		git commit -m 'Synchronizing completion at $TODAY'
 		git push -u origin develop
 	fi
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -260,7 +260,7 @@ tag_file_check(){
 }
 
 sync_commit_check(){
-	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 40 ]]; then
+	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 10 ]]; then
 		git_commit
 	fi
 }
