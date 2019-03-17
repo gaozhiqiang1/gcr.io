@@ -234,15 +234,19 @@ image_list_create_quayio(){
 			# 处理latest镜像
 			if [ $TAG == "latest" ]; then
 				DIGEST=$(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r '.tags[]|select(.name == "latest" and (has("end_ts")|not) ).manifest_digest')
-				echo $DIGEST > ${IMAGE}/latest
-				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
-				if [ $? -ne 0 ]; then
-					#docker pull ${IMAGE}:latest
-					#echo ${IMAGE}:latest >> $IMAGE_LIST
-					continue
+				if [ -f ${IMAGE}/latest.old ]; then
+					echo $DIGEST > ${IMAGE}/latest
+					diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
+					if [ $? -ne 0 ]; then
+						#docker pull ${IMAGE}:latest
+						echo ${IMAGE}:latest >> $IMAGE_LIST
+						rm -rf ${IMAGE}/latest.old
+					fi
 				else
-					echo ${IMAGE}/latest >> $IMAGE_LIST
+					echo $DIGEST > ${IMAGE}/latest
+					echo ${IMAGE}:latest >> $IMAGE_LIST
 				fi
+			
 			fi
 			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
 			if [ ! -f ${IMAGE}/${TAG} ]; then
