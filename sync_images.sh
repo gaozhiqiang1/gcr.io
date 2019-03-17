@@ -348,6 +348,7 @@ tag_file_check1(){
 echo "你好"
 while read PATHS FILE; do
 	echo 'gao'
+	travis_live_check
 	read -u5
 	{
 		local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
@@ -361,7 +362,6 @@ while read PATHS FILE; do
 		fi
 		echo >&5
 	}&
-	travis_live_check
 	echo 'di'
 	# 如果同步时长超过40min就自动提交
 done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
