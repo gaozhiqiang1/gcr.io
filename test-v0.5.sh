@@ -194,8 +194,6 @@ image_list_create(){
 image_pull(){
 	echo "拉取镜像"
 	while read LINE; do
-		# 如果同步时长超过40min就自动提交
-		sync_commit_check
 
 		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
 		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
@@ -214,6 +212,9 @@ image_pull(){
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi	
+		
+		# 如果同步时长超过40min就自动提交
+		sync_commit_check
 	done < $IMAGE_LIST
 
 	rm -rf $IMAGE_LIST
@@ -284,6 +285,9 @@ tag_file_check1(){
 				rm -rf ${PATH}/${FILE}
 				echo '坏'
 			fi
+	
+			# 如果同步时长超过40min就自动提交
+			sync_commit_check
 		done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
 		
 	fi
