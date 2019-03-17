@@ -152,7 +152,7 @@ image_list_create_gcrio(){
 	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
-#	tag_file_check1 gcr.io
+	tag_file_check1 gcr.io
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -250,6 +250,7 @@ image_pull(){
 			read -u5
 			{
 				docker pull $LINE &> /dev/null && { echo "####################################################################################"; echo "拉取镜像${LINE}成功"; }
+				sync_commit_check
 				# "echo >&5"错写为"exec >&5"导致放至后台后就没有wait的效果了似的,找到原因了
 				echo >&5
 			}&
@@ -258,13 +259,14 @@ image_pull(){
 		
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
+			sync_commit_check
 		fi	
 		
 		# 如果同步时长超过40min就自动提交
-		sync_commit_check
+		#sync_commit_check
 	done < $IMAGE_LIST
 
-	rm -rf $IMAGE_LIST
+	#rm -rf $IMAGE_LIST
 }
 
 image_push(){
@@ -322,26 +324,33 @@ tag_file_check(){
 tag_file_check1(){
 	local DOMAIN=$1
 	local TEST=$(find ${DOMAIN}/ -type f)
+
+	
 	if [ -n $TEST ]; then
 		echo "空"
 	else
 		echo "不空"
-		#while read PATH FILE; do
-		#	if [[ $RETURN_VALUE == null ]]; then
-		#		echo '好'
-		#		rm -rf ${PATH}/${FILE}
-		#		echo '坏'
-		#	fi
+		while read PATH FILE; do
+			read -u5
+			{
+				local IMAGE_NAME=$(echo $PATH | tr "/" ${INTERVAL})
+				local TAGE_NAME=$FILE
+				local RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
+				if [[ $RETURN_VALUE == null ]]; then
+					rm -rf ${PATH}/${FILE} && sync_commit_check
+				fi
+				echo >&5
+			}&
 	
 			# 如果同步时长超过40min就自动提交
-		#	sync_commit_check
-		#done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+		done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+		wait
 		
 	fi
 }
 
 sync_commit_check(){
-	if [[ $(( (`/bin/date +%s` - $START_TIME)/60 )) -gt 5 ]]; then
+	if [[ $(( (`/bin/date +%s` - $START_TIME)/60 )) -gt 40 ]]; then
 		git_commit
 	fi
 }
