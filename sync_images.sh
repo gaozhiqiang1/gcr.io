@@ -148,9 +148,9 @@ image_list_create_gcrio(){
 	# 创建用于保存镜像列表的文件
 	IMAGE_LIST=$(mktemp imagelist.XXX)
 
-	# 创建名称空间对应的目录
-	#for NS in $GCRIO_NS; do
+
 	NS=$1
+	# 创建名称空间对应的目录
 	NAMESPACE=gcr.io/${NS}
 	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 ##########################################################################################################################################################
@@ -193,7 +193,8 @@ image_list_create_gcrio(){
 		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
 	done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
-	echo "${NAMESPACE}仓库准备完成"
+	echo $NS > pointer
+	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 # $1为coreos,wire,calico,prometheus等
 quay_image(){
@@ -272,7 +273,8 @@ image_list_create_quayio(){
 			fi
 		done < <(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name)
 	done < <( curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name")
-	
+	echo $NS > pointer
+	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 
 image_pull(){
@@ -349,6 +351,9 @@ while read PATHS FILE; do
 		local RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
 		if [[ $RETURN_VALUE == null ]]; then
 			rm -rf ${PATHS}/${FILE} && sync_commit_check
+			return 0
+		else
+			return 1
 		fi
 		echo >&5
 	}&
@@ -374,14 +379,23 @@ main(){
 	sdk_install
 	sdk_auth
 	multi_thread_init
-	for I in $GCRIO_NS; do
+	for I in $GCRIO_NS $QUAYIO_NS; do
+		sed -i '/'"$I"'/d' allns; echo $I >> all
 		image_list_create_gcrio $I
 		image_pull
+
 	done
-	for I in $QUAYIO_NS; do
-		image_list_create_quayio $I
-		image_pull
-	done
+	#while read I; do
+	#	sed -i '/'"$I"'/d' gcrio.list; echo $I >> gcrions.list
+	#	image_list_create_gcrio $I
+	#	image_pull
+	#done < gcrions.list
+
+	#while read I; do
+	#	sed -i '/'"$I"'/d' quayio.list; echo $I >> $quayions.list
+	#	image_list_create_quayio $I
+	#	image_pull
+	#done < quayions.list
 	exec 5>&-
 	generate_changelog
 	git_commit
