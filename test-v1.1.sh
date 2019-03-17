@@ -354,12 +354,12 @@ main(){
 	sdk_install
 	sdk_auth
 	multi_thread_init
-	for I in $QUAYIO_NS; do
-		image_list_create_quayio $I
-		image_pull
-	done
 	for I in $GCRIO_NS; do
 		image_list_create_gcrio $I
+		image_pull
+	done
+	for I in $QUAYIO_NS; do
+		image_list_create_quayio $I
 		image_pull
 	done
 	exec 5>&-
