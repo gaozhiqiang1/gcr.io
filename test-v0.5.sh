@@ -324,7 +324,7 @@ tag_file_check(){
 }
 tag_file_check1(){
 	local DOMAIN=$1
-	local TEST=$(find ${DOMAIN}/ -type f)
+	local TEST=$(find ${DOMAIN}/ -type f | head -n1)
 
 	
 	if [ -n $TEST ]; then
