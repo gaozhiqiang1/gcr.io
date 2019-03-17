@@ -320,16 +320,16 @@ tag_file_check1(){
 		echo "空"
 	else
 		echo "不空"
-		while read PATH FILE; do
-			if [[ $RETURN_VALUE == null ]]; then
-				echo '好'
-				rm -rf ${PATH}/${FILE}
-				echo '坏'
-			fi
+		#while read PATH FILE; do
+		#	if [[ $RETURN_VALUE == null ]]; then
+		#		echo '好'
+		#		rm -rf ${PATH}/${FILE}
+		#		echo '坏'
+		#	fi
 	
 			# 如果同步时长超过40min就自动提交
-			sync_commit_check
-		done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+		#	sync_commit_check
+		#done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
 		
 	fi
 }
