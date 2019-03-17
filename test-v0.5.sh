@@ -152,7 +152,7 @@ image_list_create_gcrio(){
 	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
-	tag_file_check1 gcr.io
+#	tag_file_check1 gcr.io
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -171,7 +171,7 @@ image_list_create_gcrio(){
 					#docker pull ${IMAGE}:latest
 					echo ${IMAGE}:latest >> $IMAGE_LIST
 					#continue
-
+				
 				fi
 			fi
 			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
