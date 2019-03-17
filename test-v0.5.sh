@@ -278,6 +278,14 @@ tag_file_check1(){
 		echo "空"
 	else
 		echo "不空"
+		while read PATH FILE; do
+			if [[ $RETURN_VALUE == null ]]; then
+				echo '好'
+				rm -rf ${PATH}/${FILE}
+				echo '坏'
+			fi
+		done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+		
 	fi
 }
 
