@@ -16,9 +16,9 @@ install:
 script:
 - "bash ./test-v0.5.sh"
 before_install:
+- sudo apt-get -y install coreutils
 - export START_TIME=$(date +%s)
 - sudo apt-get -y install bash
-- sudo apt-get -y install coreutils
 - export start_time=$(date +%s)
 - mkdir -p ~/.docker
 - mkdir -p ~/.ssh
