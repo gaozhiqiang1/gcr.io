@@ -172,7 +172,7 @@ image_list_create(){
 				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
 				if [ $? -ne 0 ]; then
 					#docker pull ${IMAGE}:latest
-					echo ${IMAGE}:latest >> $IMAGE_LIST
+					#echo ${IMAGE}:latest >> $IMAGE_LIST
 					continue
 
 				fi
@@ -295,7 +295,7 @@ tag_file_check1(){
 }
 
 sync_commit_check(){
-	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 10 ]]; then
+	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 40 ]]; then
 		git_commit
 	fi
 }
