@@ -347,6 +347,7 @@ tag_file_check1(){
 # 如果没有值,这个代码段就直接过去了,不会有任何影响;这里有一个疑问就是TEST有值都为空是个什么鬼
 echo "你好"
 while read PATHS FILE; do
+	echo 'gao'
 	read -u5
 	{
 		local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
@@ -358,9 +359,10 @@ while read PATHS FILE; do
 		else
 			return 1
 		fi
-		travis_live_check
 		echo >&5
 	}&
+	travis_live_check
+	echo 'di'
 	# 如果同步时长超过40min就自动提交
 done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
 wait
