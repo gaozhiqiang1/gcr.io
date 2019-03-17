@@ -14,7 +14,7 @@ branches:
 install:
 - git remote -v
 script:
-- "bash -x ./test-v0.5.sh"
+- "bash ./test-v0.5.sh"
 before_install:
 - sudo apt-get -y install bash
 - sudo apt-get -y install coreutils

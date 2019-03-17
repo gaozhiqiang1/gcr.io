@@ -350,7 +350,7 @@ tag_file_check1(){
 }
 
 sync_commit_check(){
-	if [[ $(( (`/bin/date +%s` - $START_TIME)/60 )) -gt 40 ]]; then
+	if [[ $(( (`/bin/date +%s` - $START_TIME)/60 )) -gt 10 ]]; then
 		git_commit
 	fi
 }
