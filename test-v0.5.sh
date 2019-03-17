@@ -64,7 +64,7 @@ git_init(){
 }
 
 git_commit(){
-	#rm -rf $IMAGE_LIST
+	rm -rf $IMAGE_LIST
 	local LINES=$(git status -s | wc -l)
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
@@ -139,7 +139,7 @@ sdk_auth(){
 }
 
 # gcr.io/<namespace>/<image>:<tag> --> gcr.io/<namespace>/<image>/<tag>
-image_list_create(){
+image_list_create_gcrio(){
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	# 创建用于保存镜像列表的文件
 	IMAGE_LIST=$(mktemp imagelist.XXX)
@@ -147,12 +147,8 @@ image_list_create(){
 	# 创建名称空间对应的目录
 	#for NS in $GCRIO_NS; do
 	NS=$1
-	REPOSITORY=gcr.io/${NS}
-	[ -d $REPOSITORY ] || mkdir -p $REPOSITORY
-###########################################################################################################################################################
-
-
-
+	NAMESPACE=gcr.io/${NS}
+	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
 	tag_file_check1 gcr.io
@@ -187,9 +183,52 @@ image_list_create(){
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
 		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	done < <(gcloud container images list --repository=${REPOSITORY} --format="value(NAME)")
-	#done
+	done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
 	echo "${REPOSITORY}仓库准备完成"
+}
+
+image_list_create_quayio(){
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	# 创建用于保存镜像列表的文件
+	IMAGE_LIST=$(mktemp imagelist.XXX)
+
+	# $1为quay.io的名称空间
+	NS=$1
+	NAMESPACE=quay.io/${NS}
+	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
+	
+	tag_file_check1 quay.io
+	
+	# 创建镜像所对应的目录
+	while read IMAGE; do
+
+		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
+		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
+		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
+
+		# 创建标签所对应的文件
+		while read TAG; do
+			# 处理latest镜像
+			if [[ $TAG == "latest" ]] && [[ -f ${IMAGE}/latest.old ]]; then
+				DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
+				echo $DIGEST > $IMAGE/latest
+				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
+				if [ $? -ne 0 ]; then
+					#docker pull ${IMAGE}:latest
+					#echo ${IMAGE}:latest >> $IMAGE_LIST
+					continue
+
+				fi
+			fi
+			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
+			if [ ! -f ${IMAGE}/${TAG} ]; then
+				echo ${IMAGE}:${TAG} > ${IMAGE}/${TAG}
+				#docker pull ${IMAGE}:${TAG}
+				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
+			fi
+		done
+	done
+	
 }
 
 image_pull(){
@@ -295,7 +334,7 @@ tag_file_check1(){
 }
 
 sync_commit_check(){
-	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 40 ]]; then
+	if [[ $(( (`date +%s`-$START_TIME)/60 )) -gt 5 ]]; then
 		git_commit
 	fi
 }
@@ -310,7 +349,11 @@ main(){
 	sdk_auth
 	multi_thread_init
 	for I in $GCRIO_NS; do
-		image_list_create $I
+		image_list_create_gcrio $I
+		image_pull
+	done
+	for I in $QUAYIO_NS; do
+		image_list_create_quayio $I
 		image_pull
 	done
 	exec 5>&-
