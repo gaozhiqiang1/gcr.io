@@ -169,8 +169,8 @@ image_list_create_gcrio(){
 				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
 				if [ $? -ne 0 ]; then
 					#docker pull ${IMAGE}:latest
-					#echo ${IMAGE}:latest >> $IMAGE_LIST
-					continue
+					echo ${IMAGE}:latest >> $IMAGE_LIST
+					#continue
 
 				fi
 			fi
