@@ -315,7 +315,7 @@ tag_file_check(){
 }
 tag_file_check1(){
 	local DOMAIN=$1
-	TEST=$(find gcr.io/ -type f)
+	local TEST=$(find ${DOMAIN}/ -type f)
 	if [[ -n $TEST ]]; then
 		echo "空"
 	else
