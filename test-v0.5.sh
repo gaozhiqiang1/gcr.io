@@ -64,6 +64,7 @@ git_init(){
 }
 
 git_commit(){
+	exec 5>&-;exec 5<&-
 	rm -rf $IMAGE_LIST
 	local LINES=$(git status -s | wc -l)
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
