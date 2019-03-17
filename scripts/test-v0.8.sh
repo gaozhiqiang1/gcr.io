@@ -12,8 +12,8 @@ GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
 # 同步镜像之前打标使用的间隔符
 INTERVAL=.
 
-# 启动多少个线程同步,其实是进程,早先不懂所以写为线程
-THREAD=2
+# 启动多少个线程同步
+THREAD=3
 # 磁盘容量超过多少时清理镜像
 DISK=70
 
@@ -22,9 +22,6 @@ set -e
 
 # note1: travis-ci构建项目的最大时长是50min,超时之后项目构建终止
 # note2: travis-ci如果长时间没有输出,那么10min之后会终止项目
-# 尽量保持默认,因为如果调高线程,虽然拉取与上传镜像,以及tag文件与docker hub仓库对比的速度都加快,但是在40min提交,50min之前能够完成既有工作并正常提交呢?这是一个问题!
-# 如果将40min检查提交改为30min,那么接近40000个镜像能够在短时间内完成检查,若是不能那么总有一些镜像是缺失的;为了保证镜像完整,应该在更长的时限提高进程(THREAD)个数吧!
-# 后台运行进程需要考量的!!!对于存活状态也就是10min之内必须有输出不必考虑,因为全程输出,根本不会受到影响
 
 multi_thread_init(){
 	trap 'exec 5>&-;exec 5<&-;exit 0' 2
@@ -52,7 +49,6 @@ git_init(){
 	# 修正源
 	git remote remove origin
 	git remote add origin $GITHUB_REPO_ADDR
-	#git pull
 	if git branch -a | grep 'origin/develop' &> /dev/null; then
 		git checkout develop
 		git pull origin develop
@@ -67,18 +63,16 @@ git_init(){
 }
 
 git_commit(){
-	exec 5>&-;exec 5<&-
-	rm -rf $IMAGE_LIST
+	#rm -rf $IMAGE_LIST
 	local LINES=$(git status -s | wc -l)
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
 		git add -A
-		git commit -m "Synchronizing completion at ${TODAY}"
+		git commit 'Synchronizing completion at $TODAY'
 		git push -u origin develop
 	fi
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	echo "提交GITHUB仓库完成"
-	exit
 }
 
 add_yum_repo(){
@@ -125,7 +119,7 @@ sdk_install(){
 	else
 		# 其实工作在这一层
 		add_apt_source
-		sudo apt-get -y install google-cloud-sdk &> /dev/null
+		sudo apt-get -y install google-cloud-sdk && echo "安装"
 		echo "安装软件完成"
 	fi
 }
@@ -143,7 +137,7 @@ sdk_auth(){
 }
 
 # gcr.io/<namespace>/<image>:<tag> --> gcr.io/<namespace>/<image>/<tag>
-image_list_create_gcrio(){
+image_list_create(){
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	# 创建用于保存镜像列表的文件
 	IMAGE_LIST=$(mktemp imagelist.XXX)
@@ -151,12 +145,9 @@ image_list_create_gcrio(){
 	# 创建名称空间对应的目录
 	#for NS in $GCRIO_NS; do
 	NS=$1
-	NAMESPACE=gcr.io/${NS}
-	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
-##########################################################################################################################################################
-#	tag_file_check gcr.io
-	tag_file_check1 gcr.io
-	
+	REPOSITORY=gcr.io/${NS}
+	#[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
+
 	# 创建镜像所对应的目录
 	while read IMAGE; do
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
@@ -166,103 +157,35 @@ image_list_create_gcrio(){
 		# 创建标签所对应的文件
 		while read TAG; do
 			# 处理latest镜像
-			if [ $TAG == "latest" ]; then
+			if [[ $TAG == "latest" ]] && [[ -f ${IMAGE}/latest.old ]]; then
 				DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
-				if [ -f ${IMAGE}/latest.old ]; then
-					echo $DIGEST > $IMAGE/latest
-					diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
-					if [ $? -ne 0 ]; then
-						#docker pull ${IMAGE}:latest
-						echo ${IMAGE}:latest >> $IMAGE_LIST
-						rm -rf ${IMAGE}/latest.old
-						#continue
-					fi
-				else
-					echo $DIGEST > ${IMAGE}/latest
+				echo $DIGEST > $IMAGE/latest
+				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
+				if [ $? -ne 0 ]; then
+					#docker pull ${IMAGE}:latest
 					echo ${IMAGE}:latest >> $IMAGE_LIST
+
 				fi
 			fi
 			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
-			if [ ! -f ${IMAGE}/${TAG} ]; then
+			if [ ! -f ${IMAGE}:${TAG} ]; then
 				echo ${IMAGE}:${TAG} > ${IMAGE}/${TAG}
 				#docker pull ${IMAGE}:${TAG}
 				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
 			fi
 			#echo ${IMAGE}:${TAG} >> list.txt &
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
-		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
+		done < <(gcloud container images list-tags $IMAGE --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
-	echo "${NAMESPACE}仓库准备完成"
-}
-
-image_list_create_quayio(){
-
-	# 获取quay.io/core名称空间下的Image仓库(quay.io/<namespace>/image:tag)
-	# curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='coreos | jq -r '"quay.io/'coreos'/"'" + .repositories[].name"
-	#	quay.io/coreos/pdns
-	#	quay.io/coreos/nginx
-
-	# 获取quay.io/coreos/flannel镜像的标签
-	# curl -sL "https://quay.io/api/v1/repository/coreos/flannel?tag=info" | jq -r .tags[].name
-	#	v0.11.0-amd64
-	#	v0.9.0-rc1-arm64
-	
-	# 获取quay.io/coreos/flannel:tag镜像的Digest,我们是对v0.9.1取的digest,因为它没有latest
-	# curl -sL "https://quay.io/api/v1/repository/coreos/flannel?tag=info" | jq -r '.tags[]|select(.name == "v0.9.1" and (has("end_ts")|not) ).manifest_digest'
-
-	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	# 创建用于保存镜像列表的文件
-	IMAGE_LIST=$(mktemp imagelist.XXX)
-
-	# $1为quay.io的名称空间
-	NS=$1
-	NAMESPACE=quay.io/${NS}
-	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
-	
-	tag_file_check1 quay.io
-	
-	# 创建镜像所对应的目录
-	while read IMAGE; do
-
-		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
-		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
-		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
-
-		# 创建标签所对应的文件
-		while read TAG; do
-			# 处理latest镜像
-			if [ $TAG == "latest" ]; then
-				DIGEST=$(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r '.tags[]|select(.name == "latest" and (has("end_ts")|not) ).manifest_digest')
-				if [ -f ${IMAGE}/latest.old ]; then
-					echo $DIGEST > ${IMAGE}/latest
-					diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
-					if [ $? -ne 0 ]; then
-						#docker pull ${IMAGE}:latest
-						echo ${IMAGE}:latest >> $IMAGE_LIST
-						rm -rf ${IMAGE}/latest.old
-					fi
-				else
-					echo $DIGEST > ${IMAGE}/latest
-					echo ${IMAGE}:latest >> $IMAGE_LIST
-				fi
-			
-			fi
-			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
-			if [ ! -f ${IMAGE}/${TAG} ]; then
-				echo ${IMAGE}:${TAG} > ${IMAGE}/${TAG}
-				#docker pull ${IMAGE}:${TAG}
-				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
-			fi
-		done < <(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name)
-	done < <( curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name")
-	
+	done < <(gcloud container images list --repository=$REPOSITORY --format="value(NAME)")
+	#done
+	echo "${REPOSITORY}仓库准备完成"
 }
 
 image_pull(){
 	echo "拉取镜像"
 	while read LINE; do
-
+		
 		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
 		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
 		# 还有就是拉取完镜像才能被清理镜像所识别,不会造成边拉去边清理这种冲突
@@ -270,7 +193,7 @@ image_pull(){
 		for I in $(seq $THREAD); do
 			read -u5
 			{
-				docker pull $LINE &> /dev/null && { echo "####################################################################################"; echo "拉取镜像${LINE}成功"; }
+				docker pull $LINE &> /dev/null && {echo "####################################################################################"; echo "拉取镜像${LINE}成功"}
 				# "echo >&5"错写为"exec >&5"导致放至后台后就没有wait的效果了似的,找到原因了
 				echo >&5
 			}&
@@ -280,12 +203,9 @@ image_pull(){
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi	
-		
-		# 如果同步时长超过40min就自动提交
-		sync_commit_check
 	done < $IMAGE_LIST
 
-	#rm -rf $IMAGE_LIST
+	rm -rf $IMAGE_LIST
 }
 
 image_push(){
@@ -306,49 +226,6 @@ image_push(){
 	wait
 }
 
-# 检查对应的镜像是否存在
-# curl -s https://hub.docker.com/v2/repositories/solomonlinux/nginx/tags/v1-test/ | jq -r .name
-# $1: image_name; $2: image_tag_name
-dockerhub_tag_exist(){
-	curl -s https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO_NAME}/$1/tags/$2/ | jq -r .name
-}
-
-# 凡是我们本地有标签但是dockerhub并不存在的镜像标签文件要删除
-# $1为gcr.io或者quay.io域
-tag_file_check1(){
-	local DOMAIN=$1
-#	local TEST=$(find ${DOMAIN}/ -type f | head -n1)
-
-	
-#	if [ -n "$TEST" ]; then
-#		echo "空"
-#	else
-# 如果没有值,这个代码段就直接过去了,不会有任何影响;这里有一个疑问就是TEST有值都为空是个什么鬼
-echo "你好"
-while read PATHS FILE; do
-	read -u5
-	{
-		local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
-		local TAGE_NAME=$FILE
-		local RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
-		if [[ $RETURN_VALUE == null ]]; then
-			rm -rf ${PATHS}/${FILE} && sync_commit_check
-		fi
-		echo >&5
-	}&
-	# 如果同步时长超过40min就自动提交
-done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
-wait
-		
-#	fi
-}
-
-sync_commit_check(){
-	if [[ $(( (`/bin/date +%s` - $START_TIME)/60 )) -gt 10 ]]; then
-		git_commit
-	fi
-}
-
 generate_changelog(){
 	echo
 }
@@ -358,12 +235,8 @@ main(){
 	sdk_install
 	sdk_auth
 	multi_thread_init
-	for I in $QUAYIO_NS; do
-		image_list_create_quayio $I
-		image_pull
-	done
 	for I in $GCRIO_NS; do
-		image_list_create_gcrio $I
+		image_list_create $I
 		image_pull
 	done
 	exec 5>&-
