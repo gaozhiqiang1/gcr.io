@@ -16,10 +16,9 @@ install:
 script:
 - "bash ./test-v0.5.sh"
 before_install:
+- sudo apt-get -y install bash
 - sudo apt-get -y install coreutils
 - export START_TIME=$(date +%s)
-- sudo apt-get -y install bash
-- export start_time=$(date +%s)
 - mkdir -p ~/.docker
 - mkdir -p ~/.ssh
 - openssl aes-256-cbc -K $encrypted_00ad4453bff4_key -iv $encrypted_00ad4453bff4_iv -in config.tar.gz.enc -out config.tar.gz -d
