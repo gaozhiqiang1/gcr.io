@@ -307,14 +307,14 @@ tag_file_check1(){
 #	else
 # 如果没有值,这个代码段就直接过去了,不会有任何影响;这里有一个疑问就是TEST有值都为空是个什么鬼
 echo "你好"
-while read PATH FILE; do
+while read PATHS FILE; do
 	read -u5
 	{
-		local IMAGE_NAME=$(echo $PATH | tr "/" ${INTERVAL})
+		local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
 		local TAGE_NAME=$FILE
 		local RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
 		if [[ $RETURN_VALUE == null ]]; then
-			rm -rf ${PATH}/${FILE} && sync_commit_check
+			rm -rf ${PATHS}/${FILE} && sync_commit_check
 		fi
 		echo >&5
 	}&
