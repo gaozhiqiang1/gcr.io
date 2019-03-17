@@ -154,6 +154,7 @@ image_list_create(){
 
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
+	tag_file_check1 gcr.io
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -269,6 +270,15 @@ tag_file_check(){
 			echo '坏'
 		fi
 	done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+}
+tag_file_check1(){
+	local DOMAIN=$1
+	TEST=$(find ${DOMAIN}/ -type f)
+	if [ -n $TEST ]; then
+		echo "空"
+	else
+		echo "不空"
+	fi
 }
 
 sync_commit_check(){
