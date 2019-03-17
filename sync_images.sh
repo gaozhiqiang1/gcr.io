@@ -203,7 +203,7 @@ quay_image(){
 # $1为quay.io/core/flannel
 quay_tag(){
 	local IMAGE=$1
-	curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name)
+	curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name
 
 }
 # $1为quay.io/core/fannel
