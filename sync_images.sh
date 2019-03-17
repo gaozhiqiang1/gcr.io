@@ -16,6 +16,8 @@ INTERVAL=.
 THREAD=3
 # 磁盘容量超过多少时清理镜像
 DISK=70
+# 定义存活开始时间
+LIVE_START_TIME=`date +%s`
 
 # 出错立即终止
 set -e
@@ -193,7 +195,7 @@ image_list_create_gcrio(){
 		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
 	done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
-	echo $NS > pointer
+	travis_live_check
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 # $1为coreos,wire,calico,prometheus等
@@ -273,7 +275,7 @@ image_list_create_quayio(){
 			fi
 		done < <(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name)
 	done < <( curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name")
-	echo $NS > pointer
+	travis_live_check
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 
@@ -293,12 +295,13 @@ image_pull(){
 				echo >&5
 			}&
 		done
+		travis_live_check
 		wait
 		
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi	
-		
+		travis_live_check
 		# 如果同步时长超过40min就自动提交
 		sync_commit_check
 	done < $IMAGE_LIST
@@ -355,6 +358,7 @@ while read PATHS FILE; do
 		else
 			return 1
 		fi
+		travis_live_check
 		echo >&5
 	}&
 	# 如果同步时长超过40min就自动提交
@@ -367,6 +371,13 @@ wait
 sync_commit_check(){
 	if [[ $(( (`/bin/date +%s` - $START_TIME)/60 )) -gt 40 ]]; then
 		git_commit
+	fi
+}
+
+travis_live_check(){
+	if [ $(( (`date +%s` - LIVE_START_TIME)/60 )) -gt 8 ]; then
+		LIVE_START_TIME=`date +%s`
+		echo "Travis Live!!!"
 	fi
 }
 
