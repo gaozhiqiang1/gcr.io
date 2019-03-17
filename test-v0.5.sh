@@ -210,15 +210,16 @@ image_list_create_quayio(){
 		# 创建标签所对应的文件
 		while read TAG; do
 			# 处理latest镜像
-			if [[ $TAG == "latest" ]] && [[ -f ${IMAGE}/latest.old ]]; then
+			if [ $TAG == "latest" ]; then
 				DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
-				echo $DIGEST > $IMAGE/latest
+				echo $DIGEST > ${IMAGE}/latest
 				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
 				if [ $? -ne 0 ]; then
 					#docker pull ${IMAGE}:latest
 					#echo ${IMAGE}:latest >> $IMAGE_LIST
 					continue
-
+				else
+					echo ${IMAGE}/latest >> $IMAGE_LIST
 				fi
 			fi
 			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
