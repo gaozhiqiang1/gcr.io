@@ -163,7 +163,7 @@ image_list_create_gcrio(){
 		# 创建标签所对应的文件
 		while read TAG; do
 			# 处理latest镜像
-			if [[ $TAG == "latest" ]] && [[ -f ${IMAGE}/latest.old ]]; then
+			if [ $TAG == "latest" ]; then
 				DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
 				echo $DIGEST > $IMAGE/latest
 				diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
