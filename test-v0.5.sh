@@ -297,40 +297,16 @@ dockerhub_tag_exist(){
 
 # 凡是我们本地有标签但是dockerhub并不存在的镜像标签文件要删除
 # $1为gcr.io或者quay.io域
-tag_file_check(){
-	local DOMAIN=$1
-	while read PATH FILE; do
-		if [[ -n $FILE ]]; then
-			echo '上'
-			break
-			echo '下'
-		fi
-		#IMAGE_NAME=${PATH##*/}
-		local IMAGE_NAME=$(echo $PATH | tr "/" ${INTERVAL})
-		local TAGE_NAME=$FILE
-		RETURN_VALUE=$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})
-		# 如果这个值为空的话就表示文件不存在,那么我们需要跳过本轮循环进入下一轮循环
-		# 这个我们不需考虑,因为我们操作的就是文件
-		#if [ -n $FILE ]; then
-			#continue
-			# break
-		#fi
-		if [[ $RETURN_VALUE == null ]]; then
-			echo '好'
-			rm -rf ${PATH}/${FILE}
-			echo '坏'
-		fi
-	done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
-}
 tag_file_check1(){
 	local DOMAIN=$1
-	local TEST=$(find ${DOMAIN}/ -type f | head -n1)
+#	local TEST=$(find ${DOMAIN}/ -type f | head -n1)
 
 	
-	if [ -n $TEST ]; then
-		echo "空"
-	else
-		echo "不空"
+#	if [ -n "$TEST" ]; then
+#		echo "空"
+#	else
+# 如果没有值,这个代码段就直接过去了,不会有任何影响;这里有一个疑问就是TEST有值都为空是个什么鬼
+		echo "你好"
 		while read PATH FILE; do
 			read -u5
 			{
@@ -347,7 +323,7 @@ tag_file_check1(){
 		done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
 		wait
 		
-	fi
+#	fi
 }
 
 sync_commit_check(){
