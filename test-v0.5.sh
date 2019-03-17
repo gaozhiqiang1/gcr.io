@@ -49,7 +49,7 @@ git_init(){
 	# 修正源
 	git remote remove origin
 	git remote add origin $GITHUB_REPO_ADDR
-	git pull
+	#git pull
 	if git branch -a | grep 'origin/develop' &> /dev/null; then
 		git checkout develop
 		git pull origin develop
