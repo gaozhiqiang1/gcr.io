@@ -185,7 +185,7 @@ image_list_create_gcrio(){
 		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
 	done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
-	echo "${REPOSITORY}仓库准备完成"
+	echo "${NAMESPACE}仓库准备完成"
 }
 
 image_list_create_quayio(){
