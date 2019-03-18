@@ -362,7 +362,7 @@ tag_file_check1(){
 echo "你好"
 while read PATHS FILE; do
 	travis_live_check
-	local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
+	local IMAGE_NAME=solomonlinux.$(echo $PATHS | tr "/" ${INTERVAL})
 	local TAGE_NAME=$FILE
 	read -u5
 	{
