@@ -170,7 +170,7 @@ image_list_create(){
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
 	tag_file_check1 $NAMESPACE
-	
+	echo '111'
 	# 创建镜像所对应的目录
 	while read IMAGE; do
 		travis_live_check
@@ -212,6 +212,7 @@ image_list_create(){
 	#done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
 	done < <([[ $2 == gcr.io ]] && gcr_image ${NAMESPACE} || quay_image ${NAMESPACE})
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
+	echo '222'
 }
 # $1为coreos,wire,calico,prometheus等
 quay_image(){
@@ -373,6 +374,7 @@ while read PATHS FILE; do
 	# 如果同步时长超过40min就自动提交
 done < <( find ${NAMESPACE}/ -type f | sed 's#/# #3' )
 wait
+echo "完了"
 		
 #	fi
 }
