@@ -182,7 +182,7 @@ image_list_create(){
 		while read TAG; do
 			# 处理latest镜像
 			if [ $TAG == "latest" ]; then
-				[ $2 == "gcr.io" ] && DIGEST=$(gcr_latest_digest ${IMAGE}) || DIGEST=$(quay_latest_digest ${IMAGE})
+				[[ $2 == "gcr.io" ]] && DIGEST=$(gcr_latest_digest ${IMAGE}) || DIGEST=$(quay_latest_digest ${IMAGE})
 				#DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
 				if [ -f ${IMAGE}/latest.old ]; then
 					echo $DIGEST > $IMAGE/latest
@@ -207,10 +207,10 @@ image_list_create(){
 			#echo ${IMAGE}:${TAG} >> list.txt &
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
 		#done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
-		done < <([ $2 == "gcr.io" ] && gcr_tag ${IMAGE} || quay_image ${IMAGE})
+		done < <([[ $2 == "gcr.io" ]] && gcr_tag ${IMAGE} || quay_image ${IMAGE})
 
 	#done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
-	done < <([ $2 == gcr.io ] && gcr_image ${NAMESPACE} || quay_image ${NAMESPACE})
+	done < <([[ $2 == gcr.io ]] && gcr_image ${NAMESPACE} || quay_image ${NAMESPACE})
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 # $1为coreos,wire,calico,prometheus等
