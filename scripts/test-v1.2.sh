@@ -157,15 +157,15 @@ gcr_latest_digest(){
 	DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
 }
 # gcr.io/<namespace>/<image>:<tag> --> gcr.io/<namespace>/<image>/<tag>
-image_list_create(){
+image_list_create_gcrio(){
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	# 创建用于保存镜像列表的文件
 	IMAGE_LIST=$(mktemp imagelist.XXX)
 
 
 	NS=$1
-	# 创建名称空间对应的目录,$2为gcr.io或quay.io
-	NAMESPACE=$2/${NS}
+	# 创建名称空间对应的目录
+	NAMESPACE=gcr.io/${NS}
 	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
@@ -173,7 +173,6 @@ image_list_create(){
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
-		travis_live_check
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
 		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
 		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
@@ -182,8 +181,7 @@ image_list_create(){
 		while read TAG; do
 			# 处理latest镜像
 			if [ $TAG == "latest" ]; then
-				[ $2 == "gcr.io" ] && DIGEST=$(gcr_latest_digest ${IMAGE}) || DIGEST=$(quay_latest_digest ${IMAGE})
-				#DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
+				DIGEST=$(gcloud container images list-tags $IMAGE --format="get(DIGEST)" --filter="tags=latest")
 				if [ -f ${IMAGE}/latest.old ]; then
 					echo $DIGEST > $IMAGE/latest
 					diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
@@ -206,11 +204,10 @@ image_list_create(){
 			fi
 			#echo ${IMAGE}:${TAG} >> list.txt &
 			#echo "文件行数: $(wc -l $IMAGE_LIST)"
-		#done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
-		done < <([ $2 == "gcr.io" ] && gcr_tag ${IMAGE} || quay_image ${IMAGE})
+		done < <(gcloud container images list-tags ${IMAGE} --format="get(TAGS)" --filter='tags:*' | sed 's#;#\n#g')
 
-	#done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
-	done < <([ $2 == gcr.io ] && gcr_image ${NAMESPACE} || quay_image ${NAMESPACE})
+	done < <(gcloud container images list --repository=${NAMESPACE} --format="value(NAME)")
+	travis_live_check
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 # $1为coreos,wire,calico,prometheus等
@@ -258,7 +255,7 @@ image_list_create_quayio(){
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
-		travis_live_check
+
 		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
 		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
 		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
@@ -290,14 +287,14 @@ image_list_create_quayio(){
 			fi
 		done < <(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name)
 	done < <( curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name")
+	travis_live_check
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
 }
 
 image_pull(){
 	echo "拉取镜像"
 	while read LINE; do
-		travis_live_check
-		sync_commit_check
+
 		# 这里对我来说很难处理,可能无法实现并发拉取镜像的效果;原因是在整个循环体里都要做成队列,但是拉取镜像和删除镜像可能存在冲突
 		# 也可能不会,再想想应该也没问题;假设磁盘容量在第一次拉取镜像时没有超过70%,那么就不会清理,然后就进入下一个循环,这就实现了并发的效果
 		# 还有就是拉取完镜像才能被清理镜像所识别,不会造成边拉去边清理这种冲突
@@ -310,12 +307,15 @@ image_pull(){
 				echo >&5
 			}&
 		done
+		travis_live_check
 		wait
 		
 		if [ $(df -h | awk -F " |%" '$NF=="/"{print $(NF-2)}') > $DISK ]; then
 			image_push
 		fi	
+		travis_live_check
 		# 如果同步时长超过40min就自动提交
+		sync_commit_check
 	done < $IMAGE_LIST
 
 	#rm -rf $IMAGE_LIST
@@ -324,7 +324,6 @@ image_pull(){
 image_push(){
 	echo "推送镜像"
 	while read REPO TAG;do
-		travis_live_check
 		read -u5
 		{
 		echo "************************************************************************************"
@@ -363,6 +362,7 @@ while read PATHS FILE; do
 	travis_live_check
 	local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
 	local TAGE_NAME=$FILE
+	echo 'gao'
 	read -u5
 	{
 		if [ "$(dockerhub_tag_exist ${IMAGE_NAME} ${TAGE_NAME})" == null ]; then
@@ -370,6 +370,7 @@ while read PATHS FILE; do
 		fi
 		echo >&5
 	}&
+	echo 'di'
 	# 如果同步时长超过40min就自动提交
 done < <( find ${NAMESPACE}/ -type f | sed 's#/# #3' )
 wait
@@ -402,11 +403,7 @@ main(){
 	for I in $GCRIO_NS $QUAYIO_NS; do
 		POINTER=$(cat < pointer)
 		if [ $I == $POINTER ]; then
-			if [ $I =~ $GCRIO ]; then
-				image_list_create $I gcr.io
-			else
-				image_list_create $I quay.io
-			fi
+			image_list_create_gcrio $I
 			image_pull
 			# 获取下一个指针
 			if [ `grep -A 1 "$(cat < pointer)" allns | wc -l` -eq 1 ]; then
@@ -415,7 +412,19 @@ main(){
 				grep -A 1 "$(cat < pointer)" allns | tail -n1 > pointer
 			fi
 		fi
+
 	done
+	#while read I; do
+	#	sed -i '/'"$I"'/d' gcrio.list; echo $I >> gcrions.list
+	#	image_list_create_gcrio $I
+	#	image_pull
+	#done < gcrions.list
+
+	#while read I; do
+	#	sed -i '/'"$I"'/d' quayio.list; echo $I >> $quayions.list
+	#	image_list_create_quayio $I
+	#	image_pull
+	#done < quayions.list
 	exec 5>&-
 	generate_changelog
 	git_commit
