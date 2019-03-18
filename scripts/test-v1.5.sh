@@ -27,7 +27,6 @@ set -e
 # 尽量保持默认,因为如果调高线程,虽然拉取与上传镜像,以及tag文件与docker hub仓库对比的速度都加快,但是在40min提交,50min之前能够完成既有工作并正常提交呢?这是一个问题!
 # 如果将40min检查提交改为30min,那么接近40000个镜像能够在短时间内完成检查,若是不能那么总有一些镜像是缺失的;为了保证镜像完整,应该在更长的时限提高进程(THREAD)个数吧!
 # 后台运行进程需要考量的!!!对于存活状态也就是10min之内必须有输出不必考虑,因为全程输出,根本不会受到影响
-# 我以为不需要存活状态检测,其实是错误的,还是需要的!!!
 
 multi_thread_init(){
 	trap 'exec 5>&-;exec 5<&-;exit 0' 2
@@ -154,42 +153,6 @@ sdk_auth(){
 	fi
 }
 
-
-# $1为coreos,wire,calico,prometheus等
-quay_image(){
-	local NS=$1
-	curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name"
-}
-# $1为quay.io/core/flannel
-quay_tag(){
-	local IMAGE=$1
-	curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name
-
-}
-# $1为quay.io/core/fannel
-quay_latest_digest(){
-	local IMAGE=$1
-	curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r '.tags[]|select(.name == "latest" and (has("end_ts")|not) ).manifest_digest'
-}
-# 算了,就这样写吧,不合并了,就这样吧!!! --2019-03-17 23:26
-# 为了轮流指针的效果,还是合并了! --2019-0318 18:16
-#	# 获取quay.io/core名称空间下的Image仓库(quay.io/<namespace>/image:tag)
-	# curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='coreos | jq -r '"quay.io/'coreos'/"'" + .repositories[].name"
-	#	quay.io/coreos/pdns
-	#	quay.io/coreos/nginx
-
-	# 获取quay.io/coreos/flannel镜像的标签
-	# curl -sL "https://quay.io/api/v1/repository/coreos/flannel?tag=info" | jq -r .tags[].name
-	#	v0.11.0-amd64
-	#	v0.9.0-rc1-arm64
-	
-	# 获取quay.io/coreos/flannel:tag镜像的Digest,我们是对v0.9.1取的digest,因为它没有latest
-#	# curl -sL "https://quay.io/api/v1/repository/coreos/flannel?tag=info" | jq -r '.tags[]|select(.name == "v0.9.1" and (has("end_ts")|not) ).manifest_digest'
-
-
-
-
-
 gcr_image(){
 	local NAMESPACE=$1
 	gcloud container images list --repository=${NAMESPACE} --format="value(NAME)"
@@ -260,7 +223,85 @@ image_list_create(){
 	echo "${NAMESPACE}名称空间下的仓库准备完成"
 	echo '222'
 }
+# $1为coreos,wire,calico,prometheus等
+quay_image(){
+	local NS=$1
+	curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name"
+}
+# $1为quay.io/core/flannel
+quay_tag(){
+	local IMAGE=$1
+	curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name
 
+}
+# $1为quay.io/core/fannel
+quay_latest_digest(){
+	local IMAGE=$1
+	curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r '.tags[]|select(.name == "latest" and (has("end_ts")|not) ).manifest_digest'
+}
+# 算了,就这样写吧,不合并了,就这样吧!!! --2019-03-17 23:26
+image_list_create_quayio(){
+
+	# 获取quay.io/core名称空间下的Image仓库(quay.io/<namespace>/image:tag)
+	# curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='coreos | jq -r '"quay.io/'coreos'/"'" + .repositories[].name"
+	#	quay.io/coreos/pdns
+	#	quay.io/coreos/nginx
+
+	# 获取quay.io/coreos/flannel镜像的标签
+	# curl -sL "https://quay.io/api/v1/repository/coreos/flannel?tag=info" | jq -r .tags[].name
+	#	v0.11.0-amd64
+	#	v0.9.0-rc1-arm64
+	
+	# 获取quay.io/coreos/flannel:tag镜像的Digest,我们是对v0.9.1取的digest,因为它没有latest
+	# curl -sL "https://quay.io/api/v1/repository/coreos/flannel?tag=info" | jq -r '.tags[]|select(.name == "v0.9.1" and (has("end_ts")|not) ).manifest_digest'
+
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	# 创建用于保存镜像列表的文件
+	IMAGE_LIST=$(mktemp imagelist.XXX)
+
+	# $1为quay.io的名称空间
+	NS=$1
+	NAMESPACE=quay.io/${NS}
+	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
+	
+	tag_file_check1 quay.io
+	
+	# 创建镜像所对应的目录
+	while read IMAGE; do
+		travis_live_check
+		# 如果镜像文件夹不存在就创建;如果镜像文件夹下存在latest文件则更名为latest.old文件
+		[ -d ${IMAGE} ] || mkdir -p ${IMAGE}
+		[ -f ${IMAGE}/latest ] && mv ${IMAGE}/latest{,.old}
+
+		# 创建标签所对应的文件
+		while read TAG; do
+			# 处理latest镜像
+			if [ $TAG == "latest" ]; then
+				DIGEST=$(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r '.tags[]|select(.name == "latest" and (has("end_ts")|not) ).manifest_digest')
+				if [ -f ${IMAGE}/latest.old ]; then
+					echo $DIGEST > ${IMAGE}/latest
+					diff ${IMAGE}/latest ${IMAGE}/latest.old &> /dev/null
+					if [ $? -ne 0 ]; then
+						#docker pull ${IMAGE}:latest
+						echo ${IMAGE}:latest >> $IMAGE_LIST
+						rm -rf ${IMAGE}/latest.old
+					fi
+				else
+					echo $DIGEST > ${IMAGE}/latest
+					echo ${IMAGE}:latest >> $IMAGE_LIST
+				fi
+			
+			fi
+			# 如果文件不存在,则说明镜像不存在,那么就创建文件并拉取镜像;否则就什么都不做
+			if [ ! -f ${IMAGE}/${TAG} ]; then
+				echo ${IMAGE}:${TAG} > ${IMAGE}/${TAG}
+				#docker pull ${IMAGE}:${TAG}
+				echo ${IMAGE}:${TAG} >> $IMAGE_LIST
+			fi
+		done < <(curl -sL "https://quay.io/api/v1/repository/${IMAGE#*/}?tag=info" | jq -r .tags[].name)
+	done < <( curl -sL 'https://quay.io/api/v1/repository?public=true&namespace='${NS} | jq -r '"quay.io/'${NS}'/"'" + .repositories[].name")
+	echo "${NAMESPACE}名称空间下的仓库准备完成"
+}
 
 image_pull(){
 	echo "拉取镜像"
