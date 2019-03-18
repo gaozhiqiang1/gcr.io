@@ -157,7 +157,7 @@ image_list_create_gcrio(){
 	[ -d $NAMESPACE ] || mkdir -p $NAMESPACE
 ##########################################################################################################################################################
 #	tag_file_check gcr.io
-	tag_file_check1 gcr.io
+	tag_file_check1 $NAMESPACE
 	
 	# 创建镜像所对应的目录
 	while read IMAGE; do
@@ -337,7 +337,7 @@ dockerhub_tag_exist(){
 # 凡是我们本地有标签但是dockerhub并不存在的镜像标签文件要删除
 # $1为gcr.io或者quay.io域
 tag_file_check1(){
-	local DOMAIN=$1
+	local NAMESPACE=$1
 #	local TEST=$(find ${DOMAIN}/ -type f | head -n1)
 
 	
@@ -348,7 +348,6 @@ tag_file_check1(){
 echo "你好"
 while read PATHS FILE; do
 	echo 'gao'
-	travis_live_check
 	read -u5
 	{
 		local IMAGE_NAME=$(echo $PATHS | tr "/" ${INTERVAL})
@@ -364,7 +363,7 @@ while read PATHS FILE; do
 	}&
 	echo 'di'
 	# 如果同步时长超过40min就自动提交
-done < <( find ${DOMAIN}/ -type f | sed 's#/# #3' )
+done < <( find ${NAMESPACE}/ -type f | sed 's#/# #3' )
 wait
 		
 #	fi
@@ -393,9 +392,17 @@ main(){
 	sdk_auth
 	multi_thread_init
 	for I in $GCRIO_NS $QUAYIO_NS; do
-		sed -i '/'"$I"'/d' allns; echo $I >> all
-		image_list_create_gcrio $I
-		image_pull
+		POINTER=$(cat < pointer)
+		if [ $I == $POINTER ]; then
+			image_list_create_gcrio $I
+			image_pull
+			# 获取下一个指针
+			if [ `grep -A 1 "$(cat < pointer)" allns | wc -l` -eq 1 ]; then
+				echo 'google_containers' > pointer
+			else
+				grep -A 1 "$(cat < pointer)" allns | tail -n1 > pointer
+			fi
+		fi
 
 	done
 	#while read I; do
