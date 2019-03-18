@@ -402,7 +402,7 @@ main(){
 	for I in $GCRIO_NS $QUAYIO_NS; do
 		POINTER=$(cat < pointer)
 		if [ $I == $POINTER ]; then
-			if [ $GCRIO =~ $I ]; then
+			if [ $GCRIO_NS =~ $I ]; then
 				image_list_create $I gcr.io
 			else
 				image_list_create $I quay.io
