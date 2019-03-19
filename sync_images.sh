@@ -274,7 +274,7 @@ image_pull(){
 		for I in $(seq $THREAD); do
 			read -u5
 			{
-				docker pull $LINE &> /dev/null && { echo "####################################################################################"; echo "拉取镜像${LINE}成功"; }
+				docker pull $LINE &> /dev/null && travis_live_check && { echo "####################################################################################"; echo "拉取镜像${LINE}成功"; }
 				# "echo >&5"错写为"exec >&5"导致放至后台后就没有wait的效果了似的,找到原因了
 				echo >&5
 			}&
