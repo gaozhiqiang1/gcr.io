@@ -80,7 +80,7 @@ git_init(){
 
 git_commit(){
 	exec 5>&-;exec 5<&-
-	rm -rf $IMAGE_LIST
+	[ -f $IMAGE_LIST ] && rm -rf $IMAGE_LIST
 	local LINES=$(git status -s | wc -l)
 	local TODAY=$(date "+%Y%m%d %H:%M:%S")
 	if [ $LINES -gt 0 ]; then
@@ -395,6 +395,8 @@ main(){
 					image_list_create $I quay.io
 				fi
 			fi
+			image_pull
+			rm -rf $IMAGE_LIST
 		fi
 	done
 	exec 5>&-
