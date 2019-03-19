@@ -382,6 +382,7 @@ main(){
 			# 获取下一个指针
 			if [ `grep -A 1 "$(cat < pointer)" allns | wc -l` -eq 1 ]; then
 				echo 'google_containers' > pointer
+				cat pointer
 				if [[ $GCRIO_NS =~ $I ]]; then
 					image_list_create $I gcr.io
 				else
@@ -389,6 +390,7 @@ main(){
 				fi
 			else
 				grep -A 1 "$(cat < pointer)" allns | tail -n1 > pointer
+				cat pointer
 				if [[ $GCRIO_NS =~ $I ]]; then
 					image_list_create $I gcr.io
 				else
