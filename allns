@@ -2,7 +2,6 @@ google_containers
 google-appengine
 cloudsql-docker
 cloud-marketplace
-kubeflow-images-public
 spinnaker-marketplace
 istio-release
 kubernetes-e2e-test-images
