@@ -14,7 +14,7 @@ branches:
 install:
 - git remote -v
 script:
-- "bash -x ./sync_images.sh"
+- "bash ./sync_images.sh"
 before_install:
 - sudo apt-get -y install bash
 - sudo apt-get -y install coreutils
