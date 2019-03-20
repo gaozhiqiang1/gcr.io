@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # gcr.io与quay.io的名称空间
-GCRIO_NS="google_containers google-appengine cloudsql-docker cloud-marketplace kubeflow-images-public spinnaker-marketplace istio-release kubernetes-e2e-test-images cloud-builders knative-releases cloud-datalab linkerd-io distroless kubernetes-helm runconduit google-samples k8s-minikube heptio-images tf-on-k8s-dogfood"
+GCRIO_NS="google_containers google-appengine cloudsql-docker cloud-marketplace spinnaker-marketplace istio-release kubernetes-e2e-test-images cloud-builders knative-releases cloud-datalab linkerd-io distroless kubernetes-helm runconduit google-samples k8s-minikube heptio-images tf-on-k8s-dogfood"
+#GCRIO_NS="google_containers google-appengine cloudsql-docker cloud-marketplace kubeflow-images-public spinnaker-marketplace istio-release kubernetes-e2e-test-images cloud-builders knative-releases cloud-datalab linkerd-io distroless kubernetes-helm runconduit google-samples k8s-minikube heptio-images tf-on-k8s-dogfood"
 QUAYIO_NS="coreos wire calico prometheus outline weaveworks hellofresh kubernetes-ingress-controller replicated kubernetes-service-catalog 3scale"
 
 # 我的dockerhub与github仓库
