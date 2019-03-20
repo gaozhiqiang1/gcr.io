@@ -13,7 +13,7 @@ GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
 INTERVAL=.
 
 # 启动多少个线程同步,其实是进程,早先不懂所以写为线程
-THREAD=3
+THREAD=1
 # 磁盘容量超过多少时清理镜像
 DISK=70
 # 定义存活开始时间
