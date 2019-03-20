@@ -13,7 +13,7 @@ GITHUB_REPO_ADDR=git@github.com:solomonlinux/gcr.io.git
 INTERVAL=.
 
 # 启动多少个线程同步,其实是进程,早先不懂所以写为线程
-THREAD=1
+THREAD=5
 # 磁盘容量超过多少时清理镜像
 DISK=70
 # 定义存活开始时间
@@ -274,7 +274,9 @@ image_pull(){
 		for I in $(seq $THREAD); do
 			read -u5
 			{
+				if [ $(echo $LINE | awk -F: '{print $1}') != "gcr.io/kubeflow-images-public/kaggle-notebook" ]; then
 				docker pull $LINE &> /dev/null && travis_live_check && { echo "####################################################################################"; echo "拉取镜像${LINE}成功"; }
+				fi
 				# "echo >&5"错写为"exec >&5"导致放至后台后就没有wait的效果了似的,找到原因了
 				echo >&5
 			}&
