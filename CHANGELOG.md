@@ -15,3 +15,7 @@
 
 2、现在还是将并发调为5个
 
+# 2019年03月21日
+1、我发现k8s.gcr.io/镜像与gcr.io/镜像可能还是有一点区别的,所以我还是使用solomonlinux/kubernetes_components来提供kubeadm所需的Pod组件
+
+2、这个脚本对于非常大的镜像无能无力,像kubeflow-images-public这个名称空间的镜像都太大了,而且经常出错,我给delete掉了,以后若是需要再维护好了
