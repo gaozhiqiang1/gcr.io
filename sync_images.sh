@@ -60,6 +60,7 @@ git_init(){
 	if git branch -a | grep 'origin/develop' &> /dev/null; then
 		git checkout develop
 		git pull origin develop
+		git branch --set-upstream-to=origin/develop develop
 	else
 		git checkout -b develop
 		git pull --no-commit origin develop
